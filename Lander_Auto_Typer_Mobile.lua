@@ -1,27 +1,3 @@
---[[
-    LANDER AUTO TYPER
-    Standalone cleaned replacement
-
-    Keeps:
-      • notification scanning
-      • keyword triggers
-      • replacement rules
-      • automatic code entry
-      • force scan
-      • saved settings
-      • status log
-
-    Intentionally contains NO:
-      • Discord webhook
-      • Discord invite/copy link
-      • spawn watcher
-      • trade/invite logic
-      • item-transfer logic
-      • HttpGet / loadstring / remote-code loading
-
-    Note: this is an original replacement implementation, not a
-    verbatim copy of the third-party source.
-]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
