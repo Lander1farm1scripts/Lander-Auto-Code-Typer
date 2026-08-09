@@ -1,6 +1,6 @@
 -- ==========================================
--- LANDER AUTO TYPER — Delta Mobile Edition
--- Ultra-polished build with full mobile support.
+-- LANDER AUTO TYPER — Premium Mobile Edition
+-- Ultra-sleek, compact design. 
 -- Clean: No webhooks, HTTP loaders, spawn watchers,
 -- trade/invite, or item-transfer functionality.
 -- ==========================================
@@ -60,39 +60,34 @@ loadConfig()
 -- ========== MOBILE DETECTION ==========
 local camera = workspace.CurrentCamera
 local viewportSize = camera.ViewportSize
-local isMobile = UserInputService.TouchEnabled and (not UserInputService.MouseEnabled or viewportSize.X < 600)
+local isMobile = UserInputService.TouchEnabled and (not UserInputService.MouseEnabled or viewportSize.X < 800)
 
 local function computeScale()
     local vw, vh = viewportSize.X, viewportSize.Y
     local guiInset = GuiService:GetGuiInset()
-    local availW = vw - 24
-    local availH = vh - guiInset.Y - 24
-    local scaleW = availW / 470
-    local scaleH = availH / 490
-    return math.clamp(math.min(scaleW, scaleH), 0.55, 1.15)
+    local availW = vw - 30
+    local availH = vh - guiInset.Y - 30
+    local scaleW = availW / 390
+    local scaleH = availH / 400
+    return math.clamp(math.min(scaleW, scaleH), 0.55, 1.05)
 end
 
 local uiScaleFactor = computeScale()
 
--- ========== COLORS ==========
+-- ========== COLORS (Premium Dark) ==========
 local COLORS = {
-    bg        = Color3.fromRGB(9, 11, 15),
-    panel     = Color3.fromRGB(15, 18, 24),
-    panel2    = Color3.fromRGB(21, 25, 33),
-    panel3    = Color3.fromRGB(28, 33, 43),
-    panel4    = Color3.fromRGB(34, 40, 52),
-    accent    = Color3.fromRGB(76, 166, 255),
-    accent2   = Color3.fromRGB(122, 196, 255),
-    accentDk  = Color3.fromRGB(40, 110, 200),
-    text      = Color3.fromRGB(241, 245, 250),
-    muted     = Color3.fromRGB(143, 154, 170),
-    good      = Color3.fromRGB(78, 211, 139),
-    goodDk    = Color3.fromRGB(40, 160, 100),
+    bg        = Color3.fromRGB(17, 19, 24),
+    panel     = Color3.fromRGB(22, 25, 31),
+    panel2    = Color3.fromRGB(28, 32, 39),
+    panel3    = Color3.fromRGB(38, 43, 52),
+    accent    = Color3.fromRGB(56, 112, 255),
+    accentLt  = Color3.fromRGB(88, 143, 255),
+    text      = Color3.fromRGB(238, 241, 245),
+    muted     = Color3.fromRGB(130, 138, 153),
+    good      = Color3.fromRGB(48, 209, 88),
     bad       = Color3.fromRGB(236, 91, 103),
-    badDk     = Color3.fromRGB(180, 60, 70),
-    warn      = Color3.fromRGB(255, 196, 87),
-    border    = Color3.fromRGB(48, 58, 72),
-    borderLt  = Color3.fromRGB(60, 72, 90),
+    border    = Color3.fromRGB(42, 47, 56),
+    borderDk  = Color3.fromRGB(30, 34, 41),
 }
 
 -- ========== UI HELPERS ==========
@@ -106,15 +101,9 @@ local function stroke(obj, color, thickness, trans)
     local s = Instance.new("UIStroke")
     s.Color = color or COLORS.border
     s.Thickness = thickness or 1
-    s.Transparency = trans or 0.1
+    s.Transparency = trans or 0
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     s.Parent = obj
-end
-
-local function gradient(obj, color1, color2, rot)
-    local g = Instance.new("UIGradient")
-    g.Color = ColorSequence.new(color1, color2)
-    g.Rotation = rot or 90
-    g.Parent = obj
 end
 
 local function pad(obj, all, l, r, t, b)
@@ -153,7 +142,6 @@ local function makeButton(parent, text, size, pos, bgColor, textColor, fontSize)
     b.AutoButtonColor = false
     b.Parent = parent
     corner(b, 8)
-    stroke(b, COLORS.border)
 
     b.MouseButton1Down:Connect(function()
         TweenService:Create(b, TweenInfo.new(0.08), { BackgroundColor3 = bgColor:Lerp(Color3.new(0, 0, 0), 0.2) }):Play()
@@ -199,23 +187,21 @@ gui.IgnoreGuiInset = true
 gui.Parent = PlayerGui
 
 local safeContainer = Instance.new("Frame")
-safeContainer.Name = "SafeContainer"
 safeContainer.Size = UDim2.new(1, 0, 1, 0)
 safeContainer.BackgroundTransparency = 1
 safeContainer.Parent = gui
 
-local BASE_W, BASE_H = 470, 490
+local BASE_W, BASE_H = 390, 400
 
 local main = Instance.new("Frame")
-main.Name = "Main"
 main.Size = UDim2.new(0, BASE_W, 0, BASE_H)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0)
-main.BackgroundColor3 = COLORS.panel
+main.BackgroundColor3 = COLORS.bg
 main.BorderSizePixel = 0
 main.Parent = safeContainer
-corner(main, 16)
-stroke(main, COLORS.borderLt, 1, 0.05)
+corner(main, 10)
+stroke(main, COLORS.borderDk, 1, 0)
 
 local shadow = Instance.new("ImageLabel")
 shadow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -224,7 +210,7 @@ shadow.Size = UDim2.new(1, 30, 1, 30)
 shadow.BackgroundTransparency = 1
 shadow.Image = "rbxassetid://1316045217"
 shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-shadow.ImageTransparency = 0.55
+shadow.ImageTransparency = 0.45
 shadow.ScaleType = Enum.ScaleType.Slice
 shadow.SliceCenter = Rect.new(10, 10, 118, 118)
 shadow.ZIndex = main.ZIndex - 1
@@ -236,58 +222,54 @@ uiScale.Parent = main
 
 -- ========== TOP BAR ==========
 local top = Instance.new("Frame")
-top.Size = UDim2.new(1, 0, 0, 72)
-top.BackgroundColor3 = COLORS.bg
+top.Size = UDim2.new(1, 0, 0, 44)
+top.BackgroundColor3 = COLORS.panel
 top.BorderSizePixel = 0
 top.Parent = main
-corner(top, 16)
+corner(top, 10)
 
-local topGrad = Instance.new("Frame")
-topGrad.Size = UDim2.new(1, 0, 0, 1)
-topGrad.Position = UDim2.new(0, 0, 1, -1)
-topGrad.BackgroundColor3 = COLORS.border
-topGrad.BorderSizePixel = 0
-topGrad.Parent = top
+local topLine = Instance.new("Frame")
+topLine.Size = UDim2.new(1, 0, 0, 1)
+topLine.Position = UDim2.new(0, 0, 1, -1)
+topLine.BackgroundColor3 = COLORS.borderDk
+topLine.BorderSizePixel = 0
+topLine.Parent = top
 
-local title = label(top, "LANDER AUTO TYPER",
-    UDim2.new(1, -110, 0, 28), UDim2.new(0, 20, 0, 14), 18, COLORS.text, Enum.Font.GothamBlack)
-
-label(top, "Clean code scanner  •  Delta Mobile Edition",
-    UDim2.new(1, -40, 0, 18), UDim2.new(0, 20, 0, 42), 10, COLORS.muted)
+local title = label(top, "LANDER AUTO TYPER", UDim2.new(1, -80, 0, 20), UDim2.new(0, 14, 0, 12), 13, COLORS.text, Enum.Font.GothamBold)
+local subtitle = label(top, "Clean code scanner", UDim2.new(1, -80, 0, 14), UDim2.new(0, 14, 0, 26), 9, COLORS.muted, Enum.Font.GothamMedium)
 
 local dotContainer = Instance.new("Frame")
-dotContainer.Size = UDim2.new(0, 16, 0, 16)
-dotContainer.Position = UDim2.new(1, -34, 0, 22)
+dotContainer.Size = UDim2.new(0, 12, 0, 12)
+dotContainer.Position = UDim2.new(1, -28, 0, 16)
+dotContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 dotContainer.BackgroundTransparency = 1
 dotContainer.Parent = top
 
 local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0, 10, 0, 10)
+dot.Size = UDim2.new(0, 6, 0, 6)
 dot.Position = UDim2.new(0.5, 0, 0.5, 0)
 dot.AnchorPoint = Vector2.new(0.5, 0.5)
 dot.BackgroundColor3 = COLORS.good
 dot.BorderSizePixel = 0
 dot.Parent = dotContainer
-corner(dot, 10)
+corner(dot, 3)
 
 local dotPulse = Instance.new("Frame")
-dotPulse.Size = UDim2.new(0, 10, 0, 10)
+dotPulse.Size = UDim2.new(0, 6, 0, 6)
 dotPulse.Position = UDim2.new(0.5, 0, 0.5, 0)
 dotPulse.AnchorPoint = Vector2.new(0.5, 0.5)
 dotPulse.BackgroundColor3 = COLORS.good
 dotPulse.BackgroundTransparency = 0.5
 dotPulse.BorderSizePixel = 0
 dotPulse.Parent = dotContainer
-corner(dotPulse, 10)
+corner(dotPulse, 3)
 
-local minButton = makeButton(top, "−",
-    UDim2.new(0, 32, 0, 28), UDim2.new(1, -44, 0, 22),
-    COLORS.panel3, COLORS.text, 16)
+local minButton = makeButton(top, "−", UDim2.new(0, 28, 0, 24), UDim2.new(1, -38, 0, 10), COLORS.panel3, COLORS.text, 16)
 
 -- ========== TABS ==========
 local tabs = Instance.new("Frame")
-tabs.Size = UDim2.new(1, -24, 0, 34)
-tabs.Position = UDim2.new(0, 12, 0, 82)
+tabs.Size = UDim2.new(1, -24, 0, 32)
+tabs.Position = UDim2.new(0, 12, 0, 54)
 tabs.BackgroundTransparency = 1
 tabs.Parent = main
 
@@ -299,8 +281,8 @@ tabLayout.Parent = tabs
 local pages = {}
 for i = 1, 4 do
     local p = Instance.new("Frame")
-    p.Size = UDim2.new(1, -24, 1, -132)
-    p.Position = UDim2.new(0, 12, 0, 124)
+    p.Size = UDim2.new(1, -24, 1, -94)
+    p.Position = UDim2.new(0, 12, 0, 92)
     p.BackgroundTransparency = 1
     p.Visible = false
     p.Parent = main
@@ -311,20 +293,29 @@ local tabButtons = {}
 local tabNames = { "Dashboard", "Triggers", "Replace", "Status" }
 
 for i, name in ipairs(tabNames) do
-    local b = makeButton(tabs, name,
-        UDim2.new(0, 108, 1, 0), UDim2.new(0, 0, 0, 0),
-        COLORS.panel2, COLORS.muted, 11)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0.25, -5, 1, 0)
+    b.BackgroundColor3 = COLORS.panel
+    b.BorderSizePixel = 0
+    b.Text = name
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 10
+    b.TextColor3 = COLORS.muted
+    b.AutoButtonColor = false
+    b.Parent = tabs
+    corner(b, 6)
+    stroke(b, COLORS.borderDk, 1, 0)
     tabButtons[i] = b
 end
 
 local function card(parent, height)
     local f = Instance.new("Frame")
     f.Size = UDim2.new(1, 0, 0, height)
-    f.BackgroundColor3 = COLORS.panel2
+    f.BackgroundColor3 = COLORS.panel
     f.BorderSizePixel = 0
     f.Parent = parent
-    corner(f, 12)
-    stroke(f, COLORS.border)
+    corner(f, 8)
+    stroke(f, COLORS.borderDk, 1, 0)
     f.LayoutOrder = #parent:GetChildren()
     return f
 end
@@ -335,24 +326,15 @@ local dashLayout = Instance.new("UIListLayout")
 dashLayout.Padding = UDim.new(0, 8)
 dashLayout.Parent = dash
 
-local hero = card(dash, 70)
-label(hero, "Code Scanner",
-    UDim2.new(1, -24, 0, 20), UDim2.new(0, 14, 0, 10), 13, COLORS.text, Enum.Font.GothamBold)
-label(hero, "Watches game notifications and assembles codes\nfrom the configured notification sequence.",
-    UDim2.new(1, -24, 0, 32), UDim2.new(0, 14, 0, 32), 10, COLORS.muted)
-
-local previewCard = card(dash, 56)
-label(previewCard, "LIVE PREVIEW",
-    UDim2.new(0.4, 0, 0, 16), UDim2.new(0, 14, 0, 8), 9, COLORS.muted, Enum.Font.GothamBold)
-
-local previewText = label(previewCard, "—",
-    UDim2.new(1, -28, 0, 24), UDim2.new(0, 14, 0, 26), 14, COLORS.accent2, Enum.Font.Code)
-previewText.TextXAlignment = Enum.TextXAlignment.Left
+local previewCard = card(dash, 50)
+pad(previewCard, 12)
+label(previewCard, "LIVE PREVIEW", UDim2.new(0.4, 0, 0, 12), UDim2.new(0, 0, 0, 0), 8, COLORS.muted, Enum.Font.GothamBold)
+local previewText = label(previewCard, "—", UDim2.new(1, 0, 0, 18), UDim2.new(0, 0, 0, 16), 14, COLORS.accentLt, Enum.Font.Code)
 
 local progressBg = Instance.new("Frame")
-progressBg.Size = UDim2.new(1, -28, 0, 4)
-progressBg.Position = UDim2.new(0, 14, 0, 46)
-progressBg.BackgroundColor3 = COLORS.panel4
+progressBg.Size = UDim2.new(1, 0, 0, 3)
+progressBg.Position = UDim2.new(0, 0, 1, -3)
+progressBg.BackgroundColor3 = COLORS.panel2
 progressBg.BorderSizePixel = 0
 progressBg.Parent = previewCard
 corner(progressBg, 2)
@@ -364,50 +346,45 @@ progressFill.BorderSizePixel = 0
 progressFill.Parent = progressBg
 corner(progressFill, 2)
 
-local forceCard = card(dash, 44)
-local force = makeButton(forceCard, "⚡ FORCE SCAN + REDEEM",
-    UDim2.new(1, -20, 1, -12), UDim2.new(0, 10, 0, 6),
-    COLORS.accent, Color3.new(1, 1, 1), 12)
-gradient(force, COLORS.accent, COLORS.accentDk, 90)
+local forceCard = card(dash, 40)
+local force = makeButton(forceCard, "⚡ FORCE SCAN + REDEEM", UDim2.new(1, -16, 1, -10), UDim2.new(0, 8, 0, 5), COLORS.accent, Color3.new(1, 1, 1), 11)
 
-local autoCard = card(dash, 44)
-label(autoCard, "Automatic Redeem",
-    UDim2.new(1, -96, 1, 0), UDim2.new(0, 14, 0, 0), 12, COLORS.text, Enum.Font.GothamBold)
+local row1 = Instance.new("Frame")
+row1.Size = UDim2.new(1, 0, 0, 40)
+row1.BackgroundTransparency = 1
+row1.Parent = dash
+row1.LayoutOrder = 3
 
-local autoToggle = makeButton(autoCard, "ON",
-    UDim2.new(0, 76, 0, 30), UDim2.new(1, -86, 0.5, -15),
-    COLORS.good, Color3.new(1, 1, 1), 10)
+local autoToggle = makeButton(row1, "AUTO: ON", UDim2.new(0.5, -4, 1, 0), UDim2.new(0, 0, 0, 0), COLORS.good, Color3.new(1, 1, 1), 10)
 
-local function refreshAuto()
-    autoToggle.Text = autoCode and "ON" or "OFF"
-    autoToggle.BackgroundColor3 = autoCode and COLORS.good or COLORS.bad
-end
-refreshAuto()
-
-local countCard = card(dash, 44)
-label(countCard, "Notifications per code",
-    UDim2.new(1, -96, 1, 0), UDim2.new(0, 14, 0, 0), 12, COLORS.text, Enum.Font.GothamBold)
+local countCard = card(row1, 40)
+countCard.Size = UDim2.new(0.5, -4, 1, 0)
+countCard.Position = UDim2.new(0.5, 4, 0, 0)
+label(countCard, "Notifications", UDim2.new(0.5, 0, 0, 12), UDim2.new(0, 12, 0, 9), 8, COLORS.muted, Enum.Font.GothamBold)
 
 local countBox = Instance.new("TextBox")
-countBox.Size = UDim2.new(0, 76, 0, 30)
-countBox.Position = UDim2.new(1, -86, 0.5, -15)
-countBox.BackgroundColor3 = COLORS.panel3
-countBox.BorderSizePixel = 0
+countBox.Size = UDim2.new(0, 30, 0, 20)
+countBox.Position = UDim2.new(1, -12, 0.5, -10)
+countBox.AnchorPoint = Vector2.new(1, 0)
+countBox.BackgroundTransparency = 1
 countBox.Text = tostring(captureCount)
 countBox.Font = Enum.Font.GothamBold
 countBox.TextSize = 12
 countBox.TextColor3 = COLORS.text
-countBox.TextXAlignment = Enum.TextXAlignment.Center
+countBox.TextXAlignment = Enum.TextXAlignment.Right
 countBox.ClearTextOnFocus = false
 countBox.Parent = countCard
-corner(countBox, 8)
-stroke(countBox, COLORS.border)
 
-local manualCard = card(dash, 44)
+local row2 = Instance.new("Frame")
+row2.Size = UDim2.new(1, 0, 0, 40)
+row2.BackgroundTransparency = 1
+row2.Parent = dash
+row2.LayoutOrder = 4
+
 local manualBox = Instance.new("TextBox")
-manualBox.Size = UDim2.new(0.62, 0, 0, 30)
-manualBox.Position = UDim2.new(0, 10, 0.5, -15)
-manualBox.BackgroundColor3 = COLORS.panel3
+manualBox.Size = UDim2.new(0.65, -4, 1, 0)
+manualBox.Position = UDim2.new(0, 0, 0, 0)
+manualBox.BackgroundColor3 = COLORS.panel
 manualBox.BorderSizePixel = 0
 manualBox.Text = ""
 manualBox.PlaceholderText = "Manual code…"
@@ -417,47 +394,31 @@ manualBox.TextSize = 11
 manualBox.TextColor3 = COLORS.text
 manualBox.TextXAlignment = Enum.TextXAlignment.Left
 manualBox.ClearTextOnFocus = false
-manualBox.Parent = manualCard
-corner(manualBox, 8)
-stroke(manualBox, COLORS.border)
-pad(manualBox, 8)
+manualBox.Parent = row2
+corner(manualBox, 6)
+stroke(manualBox, COLORS.borderDk, 1, 0)
+pad(manualBox, 10)
 
-local manualRedeem = makeButton(manualCard, "REDEEM",
-    UDim2.new(0.36, -6, 0, 30), UDim2.new(0.64, 6, 0.5, -15),
-    COLORS.panel4, COLORS.accent2, 10)
+local manualRedeem = makeButton(row2, "REDEEM", UDim2.new(0.35, 0, 1, 0), UDim2.new(0.65, 4, 0, 0), COLORS.panel3, COLORS.text, 11)
 
 -- ========== TRIGGERS TAB ==========
 local triggerScroll = Instance.new("ScrollingFrame")
 triggerScroll.Size = UDim2.new(1, 0, 1, 0)
-triggerScroll.BackgroundColor3 = COLORS.panel2
+triggerScroll.BackgroundTransparency = 1
 triggerScroll.BorderSizePixel = 0
-triggerScroll.ScrollBarThickness = isMobile and 6 or 4
+triggerScroll.ScrollBarThickness = 4
 triggerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-triggerScroll.ScrollBarImageColor3 = COLORS.borderLt
+triggerScroll.ScrollBarImageColor3 = COLORS.border
 triggerScroll.Parent = pages[2]
-corner(triggerScroll, 12)
-stroke(triggerScroll, COLORS.border)
 
 local tLayout = Instance.new("UIListLayout")
 tLayout.Padding = UDim.new(0, 6)
 tLayout.Parent = triggerScroll
-pad(triggerScroll, 12)
-
-label(triggerScroll, "Trigger Keywords",
-    UDim2.new(1, 0, 0, 22), UDim2.new(0, 0, 0, 0), 13, COLORS.text, Enum.Font.GothamBold)
-
-label(triggerScroll, "Notifications containing any keyword start code collection. Leave all empty to capture every notification.",
-    UDim2.new(1, 0, 0, 28), UDim2.new(0, 0, 0, 24), 9, COLORS.muted)
-
-local triggerDescPad = Instance.new("Frame")
-triggerDescPad.Size = UDim2.new(1, 0, 0, 4)
-triggerDescPad.BackgroundTransparency = 1
-triggerDescPad.Parent = triggerScroll
 
 for i = 1, 10 do
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, 0, 0, isMobile and 40 or 34)
-    box.BackgroundColor3 = COLORS.panel3
+    box.Size = UDim2.new(1, 0, 0, 34)
+    box.BackgroundColor3 = COLORS.panel
     box.BorderSizePixel = 0
     box.Text = keywords[i]
     box.PlaceholderText = "Keyword " .. i
@@ -468,9 +429,9 @@ for i = 1, 10 do
     box.TextXAlignment = Enum.TextXAlignment.Left
     box.ClearTextOnFocus = false
     box.Parent = triggerScroll
-    corner(box, 8)
-    stroke(box, COLORS.border)
-    pad(box, 10)
+    corner(box, 6)
+    stroke(box, COLORS.borderDk, 1, 0)
+    pad(box, 12)
 
     box.FocusLost:Connect(function()
         keywords[i] = box.Text
@@ -482,67 +443,53 @@ end
 -- ========== REPLACE TAB ==========
 local replaceScroll = Instance.new("ScrollingFrame")
 replaceScroll.Size = UDim2.new(1, 0, 1, 0)
-replaceScroll.BackgroundColor3 = COLORS.panel2
+replaceScroll.BackgroundTransparency = 1
 replaceScroll.BorderSizePixel = 0
-replaceScroll.ScrollBarThickness = isMobile and 6 or 4
+replaceScroll.ScrollBarThickness = 4
 replaceScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-replaceScroll.ScrollBarImageColor3 = COLORS.borderLt
+replaceScroll.ScrollBarImageColor3 = COLORS.border
 replaceScroll.Parent = pages[3]
-corner(replaceScroll, 12)
-stroke(replaceScroll, COLORS.border)
 
 local rLayout = Instance.new("UIListLayout")
 rLayout.Padding = UDim.new(0, 6)
 rLayout.Parent = replaceScroll
-pad(replaceScroll, 12)
-
-label(replaceScroll, "Replacement Rules",
-    UDim2.new(1, 0, 0, 22), UDim2.new(0, 0, 0, 0), 13, COLORS.text, Enum.Font.GothamBold)
-
-label(replaceScroll, "If a captured notification matches a rule keyword, it is replaced entirely with the replacement text.",
-    UDim2.new(1, 0, 0, 28), UDim2.new(0, 0, 0, 24), 9, COLORS.muted)
-
-local replaceDescPad = Instance.new("Frame")
-replaceDescPad.Size = UDim2.new(1, 0, 0, 4)
-replaceDescPad.BackgroundTransparency = 1
-replaceDescPad.Parent = replaceScroll
 
 for i = 1, 10 do
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, 0, 0, isMobile and 42 or 36)
-    row.BackgroundColor3 = COLORS.panel3
+    row.Size = UDim2.new(1, 0, 0, 34)
+    row.BackgroundColor3 = COLORS.panel
     row.BorderSizePixel = 0
     row.Parent = replaceScroll
-    corner(row, 8)
+    corner(row, 6)
+    stroke(row, COLORS.borderDk, 1, 0)
 
     local left = Instance.new("TextBox")
-    left.Size = UDim2.new(0.5, -8, 1, -8)
-    left.Position = UDim2.new(0, 8, 0, 4)
+    left.Size = UDim2.new(0.5, -6, 1, 0)
+    left.Position = UDim2.new(0, 12, 0, 0)
     left.BackgroundTransparency = 1
     left.Text = replacements[i].kw
     left.PlaceholderText = "Match"
     left.PlaceholderColor3 = COLORS.muted
     left.TextColor3 = COLORS.text
     left.Font = Enum.Font.Gotham
-    left.TextSize = 10
+    left.TextSize = 11
     left.ClearTextOnFocus = false
     left.TextXAlignment = Enum.TextXAlignment.Left
     left.Parent = row
 
-    local arrow = label(row, "→",
-        UDim2.new(0, 12, 1, 0), UDim2.new(0.5, -6, 0, 0), 10, COLORS.muted, Enum.Font.GothamBold)
+    local arrow = label(row, "→", UDim2.new(0, 12, 1, 0), UDim2.new(0.5, -6, 0, 0), 12, COLORS.muted, Enum.Font.GothamBold)
     arrow.TextXAlignment = Enum.TextXAlignment.Center
 
     local right = Instance.new("TextBox")
-    right.Size = UDim2.new(0.5, -8, 1, -8)
-    right.Position = UDim2.new(0.5, 0, 0, 4)
+    right.Size = UDim2.new(0.5, -18, 1, 0)
+    right.Position = UDim2.new(0.5, 6, 0, 0)
     right.BackgroundTransparency = 1
     right.Text = replacements[i].rep
-    right.PlaceholderText = "Replace with"
+    right.PlaceholderText = "Replace"
     right.PlaceholderColor3 = COLORS.muted
-    right.TextColor3 = COLORS.accent2
+    right.TextColor3 = COLORS.accentLt
     right.Font = Enum.Font.Gotham
-    right.TextSize = 10
+    right.TextSize = 11
     right.ClearTextOnFocus = false
     right.TextXAlignment = Enum.TextXAlignment.Left
     right.Parent = row
@@ -561,33 +508,27 @@ end
 
 -- ========== STATUS TAB ==========
 local statusPage = pages[4]
-
 local statusScroll = Instance.new("ScrollingFrame")
-statusScroll.Size = UDim2.new(1, 0, 1, -44)
-statusScroll.BackgroundColor3 = COLORS.panel2
+statusScroll.Size = UDim2.new(1, 0, 1, -36)
+statusScroll.BackgroundTransparency = 1
 statusScroll.BorderSizePixel = 0
-statusScroll.ScrollBarThickness = isMobile and 6 or 4
+statusScroll.ScrollBarThickness = 4
 statusScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-statusScroll.ScrollBarImageColor3 = COLORS.borderLt
+statusScroll.ScrollBarImageColor3 = COLORS.border
 statusScroll.Parent = statusPage
-corner(statusScroll, 12)
-stroke(statusScroll, COLORS.border)
 
 local sLayout = Instance.new("UIListLayout")
-sLayout.Padding = UDim.new(0, 3)
+sLayout.Padding = UDim.new(0, 4)
 sLayout.Parent = statusScroll
-pad(statusScroll, 10)
 
-local clearBtn = makeButton(statusPage, "CLEAR LOG",
-    UDim2.new(1, 0, 0, 34), UDim2.new(0, 0, 1, -34),
-    COLORS.panel3, COLORS.muted, 10)
+local clearBtn = makeButton(statusPage, "CLEAR LOG", UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 1, -30), COLORS.panel, COLORS.muted, 10)
+stroke(clearBtn, COLORS.borderDk, 1, 0)
 
 local function logStatus(message, logType)
     logType = logType or "info"
     local entry = "[" .. os.date("%H:%M:%S") .. "] " .. message
     table.insert(logEntries, entry)
     if #logEntries > 200 then table.remove(logEntries, 1) end
-    print("[LANDER] " .. entry)
 
     local lbl = Instance.new("TextLabel")
     lbl.Size = UDim2.new(1, -4, 0, 0)
@@ -599,11 +540,11 @@ local function logStatus(message, logType)
     lbl.TextWrapped = true
     lbl.TextXAlignment = Enum.TextXAlignment.Left
 
-    local color = COLORS.text
+    local color = COLORS.muted
     if logType == "success" then color = COLORS.good
     elseif logType == "error" then color = COLORS.bad
-    elseif logType == "warn" then color = COLORS.warn
-    elseif logType == "action" then color = COLORS.accent2 end
+    elseif logType == "warn" then color = Color3.fromRGB(255, 196, 87)
+    elseif logType == "action" then color = COLORS.accentLt end
 
     lbl.TextColor3 = color
     lbl.Parent = statusScroll
@@ -618,31 +559,23 @@ clearBtn.MouseButton1Click:Connect(function()
         if child:IsA("TextLabel") then child:Destroy() end
     end
     logEntries = {}
-    logStatus("Log cleared", "info")
 end)
 
 -- ========== LOGIC & FILTERS ==========
 local lastDispatchedText = ""
 local lastDispatchTime = 0
 
--- Strict filter to ignore game junk (like "Wait 3 seconds" or "<font color=...>")
 local function cleanAndValidateText(rawText)
     if not rawText then return nil end
-    -- Strip RichText/HTML tags
     local text = rawText:gsub("<[^>]+>", "")
-    -- Trim whitespace
     text = text:gsub("^%s+", ""):gsub("%s+$", "")
-    
     if text == "" then return nil end
     
     local lower = text:lower()
     local junkWords = {"wait", "second", "loading", "please", "verif", "invalid", "expired", "already", "error", "success"}
     for _, word in ipairs(junkWords) do
-        if lower:find(word, 1, true) then
-            return nil -- It's junk, ignore it completely
-        end
+        if lower:find(word, 1, true) then return nil end
     end
-    
     return text
 end
 
@@ -655,9 +588,7 @@ local function matchesKeyword(text)
     if not any then return true end
     local lower = text:lower()
     for _, kw in ipairs(keywords) do
-        if kw ~= "" and lower:find(kw:lower(), 1, true) then
-            return true
-        end
+        if kw ~= "" and lower:find(kw:lower(), 1, true) then return true end
     end
     return false
 end
@@ -665,9 +596,7 @@ end
 local function applyReplacement(text)
     local lower = text:lower()
     for _, rule in ipairs(replacements) do
-        if rule.kw ~= "" and lower:find(rule.kw:lower(), 1, true) then
-            return rule.rep
-        end
+        if rule.kw ~= "" and lower:find(rule.kw:lower(), 1, true) then return rule.rep end
     end
     return nil
 end
@@ -676,8 +605,7 @@ local function updatePreview()
     if collecting then
         previewText.Text = table.concat(collected)
         local total = captureCount > 0 and captureCount or 1
-        local done = total - remaining
-        progressFill.Size = UDim2.new(done / total, 0, 1, 0)
+        progressFill.Size = UDim2.new((total - remaining) / total, 0, 1, 0)
     else
         previewText.Text = lastCode ~= "" and lastCode or "—"
         progressFill.Size = UDim2.new(0, 0, 1, 0)
@@ -693,15 +621,13 @@ local pulseTween
 local function startPulse()
     if pulseTween then pulseTween:Cancel() end
     setDotColor(COLORS.accent)
-    pulseTween = TweenService:Create(dotPulse,
-        TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-        { Size = UDim2.new(0, 22, 0, 22), BackgroundTransparency = 1 })
+    pulseTween = TweenService:Create(dotPulse, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Size = UDim2.new(0, 12, 0, 12), BackgroundTransparency = 1 })
     pulseTween:Play()
 end
 
 local function stopPulse()
     if pulseTween then pulseTween:Cancel() end
-    dotPulse.Size = UDim2.new(0, 10, 0, 10)
+    dotPulse.Size = UDim2.new(0, 6, 0, 6)
     dotPulse.BackgroundTransparency = 0.5
     setDotColor(COLORS.good)
 end
@@ -709,7 +635,6 @@ end
 local function redeemCode(code)
     if type(code) ~= "string" or code == "" then return false end
     local success = false
-
     pcall(function()
         local codesRoot = PlayerGui:FindFirstChild("Codes")
         if not codesRoot then return end
@@ -723,7 +648,7 @@ local function redeemCode(code)
         if not confirm then return end
 
         textBox.Text = code
-        task.wait(0.2) -- Wait 0.2s for game to register text
+        task.wait(0.2)
 
         local button = confirm:FindFirstChildWhichIsA("TextButton") or confirm
         if button then
@@ -742,7 +667,7 @@ local function redeemCode(code)
         lastCode = code
         logStatus("✓ Redeemed: " .. code, "success")
     else
-        logStatus("✗ Codes UI unavailable for: " .. code, "error")
+        logStatus("✗ UI unavailable for: " .. code, "error")
     end
     updatePreview()
     return success
@@ -766,30 +691,25 @@ local function setForceScan(state)
         forceScan = true
         collected = {}
         remaining = n
-        collectDeadline = os.clock() + 60 -- 60 second timeout
+        collectDeadline = os.clock() + 60
         startPulse()
         updatePreview()
         force.Text = "✖ CANCEL SCAN"
         force.BackgroundColor3 = COLORS.bad
-        gradient(force, COLORS.bad, COLORS.badDk, 90)
         logStatus("Force scan armed — waiting for " .. n .. " notification(s)", "action")
     else
         resetCollection()
         force.Text = "⚡ FORCE SCAN + REDEEM"
         force.BackgroundColor3 = COLORS.accent
-        gradient(force, COLORS.accent, COLORS.accentDk, 90)
     end
 end
 
 local function dispatch(rawText)
     if not rawText or rawText == "" then return end
-
-    -- Filter out junk and rich text
     local text = cleanAndValidateText(rawText)
     if not text then return end
 
     local now = os.clock()
-
     if text == lastDispatchedText and (now - lastDispatchTime) < 0.2 then return end
     lastDispatchedText = text
     lastDispatchTime = now
@@ -803,7 +723,7 @@ local function dispatch(rawText)
     if forceScan and collecting then
         table.insert(collected, text)
         remaining -= 1
-        redeemDeadline = now + 2 -- Wait 2s of silence before redeeming
+        redeemDeadline = now + 2
         updatePreview()
         logStatus("Collected [" .. (#collected) .. "]: " .. text, "info")
         return
@@ -815,7 +735,7 @@ local function dispatch(rawText)
             local piece = replacement ~= nil and replacement or text
             table.insert(collected, piece)
             remaining -= 1
-            redeemDeadline = now + 2 -- Wait 2s of silence before redeeming
+            redeemDeadline = now + 2
             updatePreview()
             logStatus("Collected [" .. (#collected) .. "]: " .. piece, "info")
         elseif matchesKeyword(rawText) then
@@ -846,16 +766,13 @@ local function dispatch(rawText)
             if autoCode then 
                 local capturedResult = result
                 task.delay(2, function()
-                    if lastCode == capturedResult then 
-                        redeemCode(capturedResult) 
-                    end
+                    if lastCode == capturedResult then redeemCode(capturedResult) end
                 end)
             end
         end
     end
 end
 
--- Background loop to wait for the 2-second silence delay
 task.spawn(function()
     while true do
         task.wait(0.2)
@@ -886,27 +803,16 @@ local function ownedByUs(obj)
     return false
 end
 
-local function getText(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-        return obj.Text
-    end
-end
-
 local function hookObject(obj)
     if seen[obj] or ownedByUs(obj) then return end
     seen[obj] = true
-
     if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
         obj:GetPropertyChangedSignal("Text"):Connect(function()
             if ownedByUs(obj) or obj.Text == "" then return end
             dispatch(obj.Text)
         end)
-        
-        if obj.Text and obj.Text ~= "" then 
-            dispatch(obj.Text) 
-        end
+        if obj.Text and obj.Text ~= "" then dispatch(obj.Text) end
     end
-
     obj.DescendantAdded:Connect(function(child)
         if ownedByUs(child) then return end
         hookObject(child)
@@ -916,40 +822,34 @@ end
 local function watchTree(obj)
     if not obj or ownedByUs(obj) then return end
     hookObject(obj)
-    for _, child in ipairs(obj:GetDescendants()) do 
-        hookObject(child)
-    end
+    for _, child in ipairs(obj:GetDescendants()) do hookObject(child) end
 end
 
-local NOTIF_NAMES = {
-    "TopNotification", "Notification", "Notifications",
-    "Notify", "Toast", "Alert", "MessageLabel"
-}
-
 local function hookNotificationUI()
-    for _, name in ipairs(NOTIF_NAMES) do
+    for _, name in ipairs({"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}) do
         local existing = PlayerGui:FindFirstChild(name)
         if existing then watchTree(existing) end
     end
     PlayerGui.ChildAdded:Connect(function(child)
-        for _, name in ipairs(NOTIF_NAMES) do
-            if child.Name == name then
-                watchTree(child)
-                break
-            end
+        for _, name in ipairs({"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}) do
+            if child.Name == name then watchTree(child) break end
         end
     end)
 end
 
--- ========== EVENT CONNECTIONS ==========
+-- ========== EVENTS ==========
 force.MouseButton1Click:Connect(function() setForceScan(not forceScan) end)
+
+local function refreshAuto()
+    autoToggle.Text = autoCode and "AUTO: ON" or "AUTO: OFF"
+    autoToggle.BackgroundColor3 = autoCode and COLORS.good or COLORS.panel3
+end
 
 autoToggle.MouseButton1Click:Connect(function()
     autoCode = not autoCode
     config.autoCode = autoCode
     refreshAuto()
     saveConfig()
-    logStatus("Automatic redeem " .. (autoCode and "enabled" or "disabled"), "info")
 end)
 
 countBox.FocusLost:Connect(function()
@@ -959,15 +859,11 @@ countBox.FocusLost:Connect(function()
     countBox.Text = tostring(captureCount)
     if forceScan then setForceScan(false) end
     saveConfig()
-    logStatus("Capture count set to " .. captureCount, "info")
 end)
 
 manualRedeem.MouseButton1Click:Connect(function()
     local code = manualBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
-    if code == "" then
-        logStatus("Manual redeem: no code entered", "warn")
-        return
-    end
+    if code == "" then return end
     logStatus("Manual redeem: " .. code, "action")
     redeemCode(code)
     manualBox.Text = ""
@@ -981,13 +877,9 @@ local function setTab(index)
     currentTab = index
     for i, page in ipairs(pages) do page.Visible = (i == index) and not minimized end
     for i, button in ipairs(tabButtons) do
-        if i == index then
-            button.BackgroundColor3 = COLORS.accent
-            button.TextColor3 = Color3.new(1, 1, 1)
-        else
-            button.BackgroundColor3 = COLORS.panel2
-            button.TextColor3 = COLORS.muted
-        end
+        local isSelected = i == index
+        button.BackgroundColor3 = isSelected and COLORS.panel2 or COLORS.panel
+        button.TextColor3 = isSelected and COLORS.text or COLORS.muted
     end
     config.tab = index
     saveConfig()
@@ -999,34 +891,20 @@ end
 
 -- ========== MINIMIZE / FLOATING BUTTON ==========
 local miniButton = Instance.new("TextButton")
-miniButton.Size = UDim2.new(0, 52, 0, 52)
+miniButton.Size = UDim2.new(0, 46, 0, 46)
 miniButton.AnchorPoint = Vector2.new(0.5, 0.5)
 miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
 miniButton.BackgroundColor3 = COLORS.accent
 miniButton.BorderSizePixel = 0
 miniButton.Text = "AT"
 miniButton.Font = Enum.Font.GothamBlack
-miniButton.TextSize = 14
+miniButton.TextSize = 12
 miniButton.TextColor3 = Color3.new(1, 1, 1)
 miniButton.AutoButtonColor = false
 miniButton.Visible = false
 miniButton.Parent = safeContainer
-corner(miniButton, 16)
-stroke(miniButton, COLORS.accent2, 1.5, 0)
-gradient(miniButton, COLORS.accent, COLORS.accentDk, 90)
-
-local miniShadow = Instance.new("ImageLabel")
-miniShadow.AnchorPoint = Vector2.new(0.5, 0.5)
-miniShadow.Position = UDim2.new(0.5, 0, 0.5, 3)
-miniShadow.Size = UDim2.new(1, 16, 1, 16)
-miniShadow.BackgroundTransparency = 1
-miniShadow.Image = "rbxassetid://1316045217"
-miniShadow.ImageColor3 = Color3.new(0, 0, 0)
-miniShadow.ImageTransparency = 0.5
-miniShadow.ScaleType = Enum.ScaleType.Slice
-miniShadow.SliceCenter = Rect.new(10, 10, 118, 118)
-miniShadow.ZIndex = miniButton.ZIndex - 1
-miniShadow.Parent = miniButton
+corner(miniButton, 12)
+stroke(miniButton, COLORS.accentLt, 1, 0)
 
 local miniRing
 local function updateMiniPulse()
@@ -1040,10 +918,8 @@ local function updateMiniPulse()
         miniRing.BackgroundTransparency = 0.6
         miniRing.BorderSizePixel = 0
         miniRing.Parent = miniButton
-        corner(miniRing, 16)
-        TweenService:Create(miniRing,
-            TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-            { Size = UDim2.new(1.5, 0, 1.5, 0), BackgroundTransparency = 1 }):Play()
+        corner(miniRing, 12)
+        TweenService:Create(miniRing, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Size = UDim2.new(1.5, 0, 1.5, 0), BackgroundTransparency = 1 }):Play()
     end
 end
 
@@ -1051,20 +927,17 @@ local function applyMinimized()
     minimized = config.minimized == true
     tabs.Visible = not minimized
     for _, page in ipairs(pages) do page.Visible = false end
-
     minButton.Text = minimized and "+" or "−"
     miniButton.Visible = minimized
 
     if minimized then
         main.Visible = true
-        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-            { Size = UDim2.new(0, BASE_W, 0, 72) }):Play()
+        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(0, BASE_W, 0, 44) }):Play()
         task.delay(0.25, function() if minimized then main.Visible = false end end)
         updateMiniPulse()
     else
         main.Visible = true
-        TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-            { Size = UDim2.new(0, BASE_W, 0, BASE_H) }):Play()
+        TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.new(0, BASE_W, 0, BASE_H) }):Play()
         pages[currentTab].Visible = true
         if miniRing then miniRing:Destroy() miniRing = nil end
     end
@@ -1077,17 +950,16 @@ minButton.MouseButton1Click:Connect(function()
 end)
 
 miniButton.MouseButton1Down:Connect(function()
-    TweenService:Create(miniButton, TweenInfo.new(0.08), { Size = UDim2.new(0, 46, 0, 46) }):Play()
+    TweenService:Create(miniButton, TweenInfo.new(0.08), { Size = UDim2.new(0, 42, 0, 42) }):Play()
 end)
 miniButton.MouseButton1Up:Connect(function()
-    TweenService:Create(miniButton, TweenInfo.new(0.12), { Size = UDim2.new(0, 52, 0, 52) }):Play()
+    TweenService:Create(miniButton, TweenInfo.new(0.12), { Size = UDim2.new(0, 46, 0, 46) }):Play()
 end)
 
 -- ========== DRAGGING ==========
 do
     local dragging = false
     local dragStart, startPos
-
     top.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
@@ -1105,21 +977,15 @@ do
             end)
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if not dragging then return end
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
             local delta = input.Position - dragStart
-            local newPosX = startPos.X.Scale + (startPos.X.Offset + delta.X) / viewportSize.X
-            local newPosY = startPos.Y.Scale + (startPos.Y.Offset + delta.Y) / viewportSize.Y
-            newPosX = math.clamp(newPosX, 0.05, 0.95)
-            newPosY = math.clamp(newPosY, 0.05, 0.95)
-            main.Position = UDim2.new(newPosX, 0, newPosY, 0)
+            main.Position = UDim2.new(startPos.X.Scale + (startPos.X.Offset + delta.X) / viewportSize.X, 0, startPos.Y.Scale + (startPos.Y.Offset + delta.Y) / viewportSize.Y, 0)
         end
     end)
 end
 
--- Mini Button Drag & Tap Logic
 do
     local dragging = false
     miniButton.InputBegan:Connect(function(input)
@@ -1128,29 +994,19 @@ do
             local startPos = input.Position
             local startGuiPos = miniButton.Position
             dragging = false
-
-            local moveConn
-            local endConn
-
-            moveConn = UserInputService.InputChanged:Connect(function(moveInput)
+            local moveConn = UserInputService.InputChanged:Connect(function(moveInput)
                 if moveInput.UserInputType == input.UserInputType then
                     local delta = moveInput.Position - startPos
                     if delta.Magnitude > 8 then
                         isDrag = true
                         dragging = true
-                        local newPosX = startGuiPos.X.Scale + (startGuiPos.X.Offset + delta.X) / viewportSize.X
-                        local newPosY = startGuiPos.Y.Scale + (startGuiPos.Y.Offset + delta.Y) / viewportSize.Y
-                        newPosX = math.clamp(newPosX, 0.06, 0.94)
-                        newPosY = math.clamp(newPosY, 0.06, 0.94)
-                        miniButton.Position = UDim2.new(newPosX, 0, newPosY, 0)
+                        miniButton.Position = UDim2.new(startGuiPos.X.Scale + (startGuiPos.X.Offset + delta.X) / viewportSize.X, 0, startGuiPos.Y.Scale + (startGuiPos.Y.Offset + delta.Y) / viewportSize.Y, 0)
                     end
                 end
             end)
-
-            endConn = input.Changed:Connect(function(prop)
+            input.Changed:Connect(function(prop)
                 if prop == "UserInputState" and input.UserInputState == Enum.UserInputState.End then
                     moveConn:Disconnect()
-                    endConn:Disconnect()
                     if dragging then
                         dragging = false
                         config.miniX = miniButton.Position.X.Scale
@@ -1167,40 +1023,19 @@ do
     end)
 end
 
--- ========== RESPONSIVE RESIZE ==========
-camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
-    viewportSize = camera.ViewportSize
-    uiScaleFactor = computeScale()
-    TweenService:Create(uiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-        { Scale = uiScaleFactor }):Play()
-end)
-
 -- ========== INITIALIZATION ==========
 main.AnchorPoint = Vector2.new(0.5, 0.5)
-config.posX = math.clamp(tonumber(config.posX) or 0.5, 0.1, 0.9)
-config.posY = math.clamp(tonumber(config.posY) or 0.5, 0.1, 0.9)
-main.Position = UDim2.new(config.posX, 0, config.posY, 0)
+main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0)
+miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
 
-config.miniX = math.clamp(tonumber(config.miniX) or 0.88, 0.1, 0.9)
-config.miniY = math.clamp(tonumber(config.miniY) or 0.12, 0.1, 0.9)
-miniButton.Position = UDim2.new(config.miniX, 0, config.miniY, 0)
-
+refreshAuto()
 setTab(currentTab)
 applyMinimized()
 hookNotificationUI()
 updatePreview()
 
-logStatus("Lander Auto Typer loaded", "success")
-logStatus("Platform: " .. (isMobile and "Mobile" or "Desktop") .. "  |  Scale: " .. string.format("%.2f", uiScaleFactor), "info")
-logStatus("AutoCode: " .. (autoCode and "ON" or "OFF") .. "  |  Capture: " .. captureCount, "info")
-
-if not isMobile and UserInputService.KeyboardEnabled then
-    UserInputService.InputBegan:Connect(function(input, gpe)
-        if gpe then return end
-        if input.KeyCode == Enum.KeyCode.RightShift then
-            config.minimized = not config.minimized
-            saveConfig()
-            applyMinimized()
-        end
-    end)
-end
+camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+    viewportSize = camera.ViewportSize
+    uiScaleFactor = computeScale()
+    TweenService:Create(uiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Scale = uiScaleFactor }):Play()
+end)
