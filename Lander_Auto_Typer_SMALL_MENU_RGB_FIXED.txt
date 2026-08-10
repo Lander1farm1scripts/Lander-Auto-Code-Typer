@@ -11,7 +11,7 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 -- Whitelist Definition
 local WHITELIST = {
     "TcoAlarmSystemV2",
-    "Landeralt00"
+    "LanderAlt00"
 }
 
 local function isWhitelisted(username)
