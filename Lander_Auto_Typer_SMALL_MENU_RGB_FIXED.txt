@@ -22,7 +22,7 @@ pcall(function()
 end)
 
 -- ========== ADMIN WHITELIST ==========
-local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2"}
+local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2", "Landeralt00"}
 local isLocalAdmin = false
 for _, name in ipairs(ADMIN_LIST) do
     if name == player.Name then isLocalAdmin = true break end
@@ -441,7 +441,7 @@ local tabButtons = {}
 
 for i, name in ipairs(tabNames) do
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 55, 0, 30) -- Adjusted width to perfectly fit 6 tabs
+    button.Size = UDim2.new(0, 55, 0, 30)
     button.BackgroundColor3 = COLORS.panel
     button.BorderSizePixel = 0
     button.Text = name
@@ -1231,7 +1231,7 @@ local function setTab(index)
     currentTab = index
 
     for i, page in ipairs(pages) do 
-        page.Visible = (i == index) -- Fixed overlapping bug
+        page.Visible = (i == index)
     end
     
     for i, data in ipairs(tabButtons) do
