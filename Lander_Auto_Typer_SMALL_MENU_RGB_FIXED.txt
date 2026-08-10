@@ -1,4 +1,4 @@
-print("Lander Auto Typer Loading...")
+print("1. Script Started...")
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -6,7 +6,12 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser") -- Added for Anti-AFK
+
+-- Safely load VirtualUser for Anti-AFK
+local VirtualUser = nil
+pcall(function()
+    VirtualUser = game:GetService("VirtualUser")
+end)
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -21,9 +26,11 @@ for _, name in ipairs(ADMIN_LIST) do
 end
 
 local isTuesday = (os.date("*t").wday == 3)
+print("2. Day Check: Tuesday = " .. tostring(isTuesday) .. " | Admin = " .. tostring(isLocalAdmin))
 
 -- ========== TUESDAY GATE ==========
 if not isTuesday and not isLocalAdmin then
+    print("3. Locked: Not Tuesday.")
     local closedGui = Instance.new("ScreenGui")
     closedGui.Name = "LanderClosed"
     closedGui.IgnoreGuiInset = true
@@ -64,6 +71,8 @@ if not isTuesday and not isLocalAdmin then
     return
 end
 
+print("3. Passed Tuesday Gate. Loading Config...")
+
 -- ========== CONFIG ==========
 local CONFIG_FILE = "lander_auto_typer_config.json"
 local config = {
@@ -76,7 +85,7 @@ local config = {
         {kw = "", rep = ""}
     },
     minimized = false, tab = 1, posX = 0.5, posY = 0.5, miniX = 0.88, miniY = 0.12,
-    antiAfk = true, -- Saved config for Anti-AFK
+    antiAfk = true,
 }
 
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1536140418838958080/Kf_pxYPLwUbfd6SZ-1iJtTlS_-8Mgu23BcKEXVdkAMuGaZsJeRJNKotvUiPJQrxKHUAl"
@@ -86,7 +95,7 @@ local VERIFY_URL = RELAY_BASE .. "/verify-key"
 local keyVerified = isLocalAdmin 
 local lastActivityTime = os.clock()
 local lastCode = ""
-local antiAfkEnabled = config.antiAfk == true
+local antiAfkEnabled = true
 
 -- ========== WEBHOOK EMBED SENDER ==========
 local function sendSnipeWebhook(rewardName)
@@ -166,9 +175,11 @@ end
 
 loadConfig()
 antiAfkEnabled = config.antiAfk == true
+print("4. Config Loaded. Anti-AFK is " .. tostring(antiAfkEnabled))
 
 -- ========== KEY UI ==========
 local function showKeyUI()
+    print("5. Showing Key UI...")
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "LanderHubKey"
     keyGui.IgnoreGuiInset = true
@@ -275,6 +286,8 @@ end
 
 if not keyVerified then showKeyUI() end
 while not keyVerified do task.wait(0.5) end
+
+print("6. Key Verified! Building Main UI...")
 
 -- ========== COLORS ==========
 local COLORS = {
@@ -721,7 +734,6 @@ settingsTitle.TextSize = 10
 settingsTitle.Size = UDim2.new(1, -8, 0, 20)
 settingsTitle.Parent = settingsPage
 
--- ANTI-AFK TOGGLE
 local antiAfkLabel = Instance.new("TextLabel")
 antiAfkLabel.BackgroundTransparency = 1
 antiAfkLabel.Text = "ANTI-AFK (Bypass 20 min kick)"
@@ -1337,16 +1349,17 @@ UserInputService.WindowFocused:Connect(function() lastActivityTime = os.clock() 
 -- ==========================================
 -- ANTI-AFK LOGIC & KEY TIMER RESET
 -- ==========================================
-player.Idled:Connect(function()
-    if antiAfkEnabled and keyVerified then
-        pcall(function()
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new())
-        end)
-        -- Keep the 30-min key alive since we are interacting with the game
-        lastActivityTime = os.clock()
-    end
-end)
+if VirtualUser then
+    player.Idled:Connect(function()
+        if antiAfkEnabled and keyVerified then
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new())
+            end)
+            lastActivityTime = os.clock()
+        end
+    end)
+end
 
 task.spawn(function()
     while true do
@@ -1364,4 +1377,4 @@ task.spawn(function()
     end
 end)
 
-print("Lander Auto Typer Fully Loaded!")
+print("7. Main UI Fully Loaded!")
