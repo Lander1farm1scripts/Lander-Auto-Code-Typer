@@ -1,17 +1,13 @@
-print("1. Script Started...")
+print("Lander Hub Loading...")
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-local GuiService = game:GetService("GuiService")
 local RunService = game:GetService("RunService")
 
--- Safely load VirtualUser for Anti-AFK
 local VirtualUser = nil
-pcall(function()
-    VirtualUser = game:GetService("VirtualUser")
-end)
+pcall(function() VirtualUser = game:GetService("VirtualUser") end)
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -26,52 +22,49 @@ for _, name in ipairs(ADMIN_LIST) do
 end
 
 local isTuesday = (os.date("*t").wday == 3)
-print("2. Day Check: Tuesday = " .. tostring(isTuesday) .. " | Admin = " .. tostring(isLocalAdmin))
 
 -- ========== TUESDAY GATE ==========
 if not isTuesday and not isLocalAdmin then
-    print("3. Locked: Not Tuesday.")
     local closedGui = Instance.new("ScreenGui")
     closedGui.Name = "LanderClosed"
     closedGui.IgnoreGuiInset = true
     closedGui.Parent = PlayerGui
 
     local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 280, 0, 160)
+    main.Size = UDim2.new(0, 300, 0, 180)
     main.AnchorPoint = Vector2.new(0.5, 0.5)
     main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    main.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
+    main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
     main.BorderSizePixel = 0
     main.Parent = closedGui
     
-    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 10)
+    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
     local us = Instance.new("UIStroke", main)
-    us.Color = Color3.fromRGB(30, 34, 41)
+    us.Thickness = 2
+    us.Color = Color3.fromRGB(245, 190, 65)
 
     local title = Instance.new("TextLabel")
     title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 15)
+    title.Size = UDim2.new(1, 0, 0, 45)
+    title.Position = UDim2.new(0, 0, 0, 20)
     title.Text = "🌮 TACO TUESDAY ONLY"
     title.Font = Enum.Font.GothamBlack
-    title.TextSize = 16
+    title.TextSize = 18
     title.TextColor3 = Color3.fromRGB(245, 190, 65)
     title.Parent = main
 
     local desc = Instance.new("TextLabel")
     desc.BackgroundTransparency = 1
     desc.Size = UDim2.new(1, -40, 0, 60)
-    desc.Position = UDim2.new(0, 20, 0, 60)
+    desc.Position = UDim2.new(0, 20, 0, 70)
     desc.Text = "The script is locked. Come back on Tuesday!"
     desc.Font = Enum.Font.GothamMedium
-    desc.TextSize = 12
-    desc.TextColor3 = Color3.fromRGB(145, 145, 155)
+    desc.TextSize = 13
+    desc.TextColor3 = Color3.fromRGB(150, 150, 160)
     desc.TextWrapped = true
     desc.Parent = main
     return
 end
-
-print("3. Passed Tuesday Gate. Loading Config...")
 
 -- ========== CONFIG ==========
 local CONFIG_FILE = "lander_auto_typer_config.json"
@@ -89,13 +82,19 @@ local config = {
 }
 
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1536140418838958080/Kf_pxYPLwUbfd6SZ-1iJtTlS_-8Mgu23BcKEXVdkAMuGaZsJeRJNKotvUiPJQrxKHUAl"
-local RELAY_BASE = "https://discord-snipe-relay.onrender.com"
-local VERIFY_URL = RELAY_BASE .. "/verify-key"
+local VERIFY_URL = "https://discord-snipe-relay.onrender.com/verify-key"
 
 local keyVerified = isLocalAdmin 
 local lastActivityTime = os.clock()
 local lastCode = ""
-local antiAfkEnabled = true
+local antiAfkEnabled = config.antiAfk == true
+
+-- Session Stats
+local sessionStats = {
+    startTime = os.time(),
+    codesRedeemed = 0,
+    brainrotsSniped = 0
+}
 
 -- ========== WEBHOOK EMBED SENDER ==========
 local function sendSnipeWebhook(rewardName)
@@ -175,85 +174,107 @@ end
 
 loadConfig()
 antiAfkEnabled = config.antiAfk == true
-print("4. Config Loaded. Anti-AFK is " .. tostring(antiAfkEnabled))
 
--- ========== KEY UI ==========
+-- ========== KEY UI (Premium Style) ==========
 local function showKeyUI()
-    print("5. Showing Key UI...")
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "LanderHubKey"
     keyGui.IgnoreGuiInset = true
     keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     keyGui.Parent = PlayerGui
 
+    local blur = Instance.new("Frame")
+    blur.Size = UDim2.new(1, 0, 1, 0)
+    blur.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    blur.BackgroundTransparency = 0.5
+    blur.Parent = keyGui
+
     local keyFrame = Instance.new("Frame")
-    keyFrame.Size = UDim2.new(0, 300, 0, 190)
-    keyFrame.Position = UDim2.new(0.5, -150, 0.5, -95)
-    keyFrame.BackgroundColor3 = Color3.fromRGB(17, 17, 22)
+    keyFrame.Size = UDim2.new(0, 340, 0, 210)
+    keyFrame.Position = UDim2.new(0.5, -170, 0.5, -105)
+    keyFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 28)
     keyFrame.BorderSizePixel = 0
     keyFrame.Parent = keyGui
+    Instance.new("UICorner", keyFrame).CornerRadius = UDim.new(0, 14)
+    
+    local glow = Instance.new("UIStroke", keyFrame)
+    glow.Thickness = 2
+    glow.Color = Color3.fromRGB(120, 50, 255)
 
-    Instance.new("UICorner", keyFrame).CornerRadius = UDim.new(0, 12)
-    local keyStroke = Instance.new("UIStroke", keyFrame)
-    keyStroke.Thickness = 2
-    keyStroke.Color = Color3.fromRGB(150, 50, 255)
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -30, 0, 40)
+    title.Position = UDim2.new(0, 15, 0, 15)
+    title.BackgroundTransparency = 1
+    title.Text = "LANDER HUB"
+    title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 22
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = keyFrame
 
-    local keyTitle = Instance.new("TextLabel")
-    keyTitle.Size = UDim2.new(1, -30, 0, 35)
-    keyTitle.Position = UDim2.new(0, 15, 0, 10)
-    keyTitle.BackgroundTransparency = 1
-    keyTitle.Text = "LANDER HUB"
-    keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    keyTitle.Font = Enum.Font.GothamBlack
-    keyTitle.TextSize = 19
-    keyTitle.Parent = keyFrame
-
-    local keySubtitle = Instance.new("TextLabel")
-    keySubtitle.Size = UDim2.new(1, -30, 0, 20)
-    keySubtitle.Position = UDim2.new(0, 15, 0, 40)
-    keySubtitle.BackgroundTransparency = 1
-    keySubtitle.Text = "Enter your key"
-    keySubtitle.TextColor3 = Color3.fromRGB(160, 160, 170)
-    keySubtitle.Font = Enum.Font.Gotham
-    keySubtitle.TextSize = 12
-    keySubtitle.Parent = keyFrame
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, -30, 0, 20)
+    subtitle.Position = UDim2.new(0, 15, 0, 50)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "Enter your key to access the hub"
+    subtitle.TextColor3 = Color3.fromRGB(160, 160, 170)
+    subtitle.Font = Enum.Font.Gotham
+    subtitle.TextSize = 13
+    subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.Parent = keyFrame
 
     local keyBox = Instance.new("TextBox")
-    keyBox.Size = UDim2.new(1, -30, 0, 38)
-    keyBox.Position = UDim2.new(0, 15, 0, 68)
+    keyBox.Size = UDim2.new(1, -30, 0, 42)
+    keyBox.Position = UDim2.new(0, 15, 0, 82)
     keyBox.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
     keyBox.BorderSizePixel = 0
     keyBox.PlaceholderText = "LANDER-XXXX..."
     keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    keyBox.Font = Enum.Font.Gotham
-    keyBox.TextSize = 13
+    keyBox.Font = Enum.Font.GothamMedium
+    keyBox.TextSize = 14
     keyBox.Parent = keyFrame
     Instance.new("UICorner", keyBox).CornerRadius = UDim.new(0, 8)
+    
+    local boxStroke = Instance.new("UIStroke", keyBox)
+    boxStroke.Color = Color3.fromRGB(50, 50, 60)
+    boxStroke.Thickness = 1.5
+    
+    keyBox.Focused:Connect(function()
+        TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(120, 50, 255), Thickness = 2}):Play()
+    end)
+    keyBox.FocusLost:Connect(function()
+        TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = Color3.fromRGB(50, 50, 60), Thickness = 1.5}):Play()
+    end)
 
     local keyButton = Instance.new("TextButton")
-    keyButton.Size = UDim2.new(1, -30, 0, 35)
-    keyButton.Position = UDim2.new(0, 15, 0, 114)
-    keyButton.BackgroundColor3 = Color3.fromRGB(105, 55, 230)
+    keyButton.Size = UDim2.new(1, -30, 0, 40)
+    keyButton.Position = UDim2.new(0, 15, 0, 134)
+    keyButton.BackgroundColor3 = Color3.fromRGB(120, 50, 255)
     keyButton.BorderSizePixel = 0
     keyButton.Text = "VERIFY KEY"
     keyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
     keyButton.Font = Enum.Font.GothamBold
-    keyButton.TextSize = 13
-    keyButton.AutoButtonColor = true
+    keyButton.TextSize = 14
     keyButton.Parent = keyFrame
     Instance.new("UICorner", keyButton).CornerRadius = UDim.new(0, 8)
 
     local keyStatus = Instance.new("TextLabel")
     keyStatus.Size = UDim2.new(1, -30, 0, 25)
-    keyStatus.Position = UDim2.new(0, 15, 0, 155)
+    keyStatus.Position = UDim2.new(0, 15, 0, 180)
     keyStatus.BackgroundTransparency = 1
     keyStatus.TextColor3 = Color3.fromRGB(255, 90, 90)
     keyStatus.Font = Enum.Font.Gotham
-    keyStatus.TextSize = 11
+    keyStatus.TextSize = 12
     keyStatus.Parent = keyFrame
 
-    local checking = false
+    keyButton.MouseEnter:Connect(function()
+        TweenService:Create(keyButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(140, 70, 255)}):Play()
+    end)
+    keyButton.MouseLeave:Connect(function()
+        TweenService:Create(keyButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(120, 50, 255)}):Play()
+    end)
 
+    local checking = false
     local function tryKey()
         if checking or keyVerified then return end
         local enteredKey = tostring(keyBox.Text or ""):gsub("^%s+", ""):gsub("%s+$", ""):upper()
@@ -287,34 +308,61 @@ end
 if not keyVerified then showKeyUI() end
 while not keyVerified do task.wait(0.5) end
 
-print("6. Key Verified! Building Main UI...")
-
 -- ========== COLORS ==========
 local COLORS = {
-    bg = Color3.fromRGB(10, 10, 14), panel = Color3.fromRGB(16, 16, 22),
-    panel2 = Color3.fromRGB(25, 25, 34), panel3 = Color3.fromRGB(34, 34, 44),
-    accent = Color3.fromRGB(145, 55, 255), accentLt = Color3.fromRGB(195, 115, 255),
-    text = Color3.fromRGB(245, 245, 250), muted = Color3.fromRGB(145, 145, 155),
-    good = Color3.fromRGB(55, 205, 120), bad = Color3.fromRGB(235, 70, 80),
+    bg = Color3.fromRGB(13, 13, 18), panel = Color3.fromRGB(20, 20, 28),
+    panel2 = Color3.fromRGB(28, 28, 38), panel3 = Color3.fromRGB(38, 38, 50),
+    accent = Color3.fromRGB(120, 50, 255), accentLt = Color3.fromRGB(160, 90, 255),
+    text = Color3.fromRGB(245, 245, 250), muted = Color3.fromRGB(150, 150, 160),
+    good = Color3.fromRGB(50, 200, 120), bad = Color3.fromRGB(230, 70, 80),
     warn = Color3.fromRGB(245, 190, 65)
 }
 
--- ========== HELPERS ==========
+-- ========== UI CREATION HELPERS ==========
 local function corner(obj, r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 8) c.Parent=obj return c end
 local function stroke(obj, col, t, tr) local s=Instance.new("UIStroke") s.Color=col or COLORS.accent s.Thickness=t or 1 s.Transparency=tr or 0 s.Parent=obj return s end
 local function padding(obj, l, r, t, b) local p=Instance.new("UIPadding") p.PaddingLeft=UDim.new(0,l or 0) p.PaddingRight=UDim.new(0,r or 0) p.PaddingTop=UDim.new(0,t or 0) p.PaddingBottom=UDim.new(0,b or 0) p.Parent=obj return p end
+
+local function createButton(parent, text, size, pos, bgColor, textColor, fontSize)
+    local btn = Instance.new("TextButton")
+    btn.Size = size
+    btn.Position = pos
+    btn.BackgroundColor3 = bgColor or COLORS.panel3
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = textColor or COLORS.text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = fontSize or 12
+    btn.AutoButtonColor = false
+    btn.Parent = parent
+    corner(btn, 8)
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(1,1,1), 0.1)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bgColor or COLORS.panel3}):Play()
+    end)
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(0,0,0), 0.2)}):Play()
+    end)
+    btn.MouseButton1Up:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = bgColor or COLORS.panel3}):Play()
+    end)
+    return btn
+end
 
 -- ========== MAIN GUI ==========
 local camera = workspace.CurrentCamera
 local viewportSize = camera and camera.ViewportSize or Vector2.new(800, 600)
 
-local BASE_W = 360
-local BASE_H = 420
+local BASE_W = 380
+local BASE_H = 440
 
 local function computeScale()
     local w = viewportSize.X
     if w < 500 then return math.clamp(w / 500, 0.6, 0.9) end
-    return 0.85
+    return 0.9
 end
 
 local uiScaleFactor = computeScale()
@@ -343,68 +391,62 @@ main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = COLORS.bg
 main.BorderSizePixel = 0
 main.Parent = safeContainer
-corner(main, 14)
-stroke(main, COLORS.accent, 1.5, 0.2)
+corner(main, 12)
+
+local mainStroke = Instance.new("UIStroke", main)
+mainStroke.Color = COLORS.accent
+mainStroke.Thickness = 1.5
+mainStroke.Transparency = 0.2
+
+local shadow = Instance.new("ImageLabel")
+shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+shadow.Position = UDim2.new(0.5, 0, 0.5, 4)
+shadow.Size = UDim2.new(1, 30, 1, 30)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+shadow.ImageTransparency = 0.5
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.ZIndex = main.ZIndex - 1
+shadow.Parent = main
 
 local top = Instance.new("Frame")
-top.Size = UDim2.new(1, 0, 0, 50)
+top.Size = UDim2.new(1, 0, 0, 54)
 top.BackgroundColor3 = COLORS.panel
 top.BorderSizePixel = 0
 top.Parent = main
-corner(top, 14)
+corner(top, 12)
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -90, 0, 25)
-title.Position = UDim2.new(0, 15, 0, 8)
+title.Size = UDim2.new(1, -90, 0, 28)
+title.Position = UDim2.new(0, 16, 0, 8)
 title.BackgroundTransparency = 1
-title.Text = "LANDER'S SCRIPTS"
+title.Text = "LANDER HUB"
 title.TextColor3 = COLORS.text
 title.Font = Enum.Font.GothamBlack
-title.TextSize = 16
+title.TextSize = 18
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = top
 
 local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1, -90, 0, 15)
-subtitle.Position = UDim2.new(0, 15, 0, 30)
+subtitle.Size = UDim2.new(1, -90, 0, 16)
+subtitle.Position = UDim2.new(0, 16, 0, 33)
 subtitle.BackgroundTransparency = 1
-subtitle.Text = "AUTO CODE TYPER"
+subtitle.Text = "PREMIUM AUTO TYPER"
 subtitle.TextColor3 = COLORS.accentLt
 subtitle.Font = Enum.Font.GothamBold
-subtitle.TextSize = 9
+subtitle.TextSize = 10
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
 subtitle.Parent = top
 
-local minButton = Instance.new("TextButton")
-minButton.Size = UDim2.new(0, 34, 0, 28)
-minButton.Position = UDim2.new(1, -76, 0, 11)
-minButton.BackgroundColor3 = COLORS.panel2
-minButton.BorderSizePixel = 0
-minButton.Text = "−"
-minButton.TextColor3 = COLORS.text
-minButton.Font = Enum.Font.GothamBold
-minButton.TextSize = 18
-minButton.AutoButtonColor = true
-minButton.Parent = top
-corner(minButton, 6)
-
-local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 34, 0, 28)
-closeButton.Position = UDim2.new(1, -38, 0, 11)
-closeButton.BackgroundColor3 = COLORS.panel2
-closeButton.BorderSizePixel = 0
-closeButton.Text = "×"
-closeButton.TextColor3 = COLORS.bad
-closeButton.Font = Enum.Font.GothamBold
-closeButton.TextSize = 18
-closeButton.AutoButtonColor = true
-closeButton.Parent = top
-corner(closeButton, 6)
+local minButton = createButton(top, "−", UDim2.new(0, 34, 0, 28), UDim2.new(1, -76, 0, 13), COLORS.panel2, COLORS.text, 18)
+local closeButton = createButton(top, "×", UDim2.new(0, 34, 0, 28), UDim2.new(1, -38, 0, 13), COLORS.panel2, COLORS.bad, 18)
 closeButton.Activated:Connect(function() gui:Destroy() end)
 
 local tabs = Instance.new("Frame")
-tabs.Size = UDim2.new(1, -20, 0, 36)
-tabs.Position = UDim2.new(0, 10, 0, 58)
+tabs.Size = UDim2.new(1, -20, 0, 38)
+tabs.Position = UDim2.new(0, 10, 0, 60)
 tabs.BackgroundTransparency = 1
 tabs.Parent = main
 
@@ -412,25 +454,45 @@ local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
 tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-tabLayout.Padding = UDim.new(0, 4)
+tabLayout.Padding = UDim.new(0, 6)
 tabLayout.Parent = tabs
 
-local tabNames = { "Typer", "Keywords", "Replace", "Snipes", "Settings" }
+local tabNames = { "Typer", "Keywords", "Replace", "Snipes", "Stats", "Settings" }
 local tabButtons = {}
+
+local tabIndicator = Instance.new("Frame")
+tabIndicator.Size = UDim2.new(0, 58, 0, 32)
+tabIndicator.BackgroundColor3 = COLORS.accent
+tabIndicator.BackgroundTransparency = 0.8
+tabIndicator.BorderSizePixel = 0
+tabIndicator.Parent = tabs
+corner(tabIndicator, 6)
+Instance.new("UIStroke", tabIndicator).Color = COLORS.accent
 
 for i, name in ipairs(tabNames) do
     local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, math.floor((BASE_W - 36) / #tabNames), 0, 30)
+    button.Size = UDim2.new(0, 58, 0, 32)
     button.BackgroundColor3 = COLORS.panel
     button.BorderSizePixel = 0
     button.Text = name
     button.TextColor3 = COLORS.muted
     button.Font = Enum.Font.GothamBold
-    button.TextSize = 10
-    button.AutoButtonColor = true
+    button.TextSize = 11
+    button.AutoButtonColor = false
     button.Parent = tabs
     corner(button, 6)
     tabButtons[i] = button
+    
+    button.MouseEnter:Connect(function()
+        if currentTab ~= i then
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panel2}):Play()
+        end
+    end)
+    button.MouseLeave:Connect(function()
+        if currentTab ~= i then
+            TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panel}):Play()
+        end
+    end)
 end
 
 local pages = {}
@@ -438,8 +500,8 @@ local pages = {}
 local function makePage(name)
     local page = Instance.new("ScrollingFrame")
     page.Name = name
-    page.Size = UDim2.new(1, -20, 1, -106)
-    page.Position = UDim2.new(0, 10, 0, 100)
+    page.Size = UDim2.new(1, -20, 1, -114)
+    page.Position = UDim2.new(0, 10, 0, 104)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
     page.ScrollBarThickness = 3
@@ -450,7 +512,7 @@ local function makePage(name)
     page.Parent = main
 
     local layout = Instance.new("UIListLayout")
-    layout.Padding = UDim.new(0, 7)
+    layout.Padding = UDim.new(0, 8)
     layout.Parent = page
     padding(page, 4, 4, 4, 10)
     
@@ -462,6 +524,7 @@ local typerPage = makePage("Typer")
 local keywordPage = makePage("Keywords")
 local replacePage = makePage("Replace")
 local snipePage = makePage("Snipes")
+local statsPage = makePage("Stats")
 local settingsPage = makePage("Settings")
 
 -- ========== STATE VARIABLES ==========
@@ -487,87 +550,71 @@ for i = 1, 10 do
 end
 
 -- ========== TYPER PAGE UI ==========
-local autoToggle = Instance.new("TextButton")
-autoToggle.Size = UDim2.new(1, -8, 0, 38)
-autoToggle.BackgroundColor3 = COLORS.good
-autoToggle.BorderSizePixel = 0
-autoToggle.Text = autoCode and "AUTO: ON" or "AUTO: OFF"
-autoToggle.TextColor3 = COLORS.text
-autoToggle.Font = Enum.Font.GothamBold
-autoToggle.TextSize = 12
-autoToggle.AutoButtonColor = true
-autoToggle.Parent = typerPage
-corner(autoToggle, 8)
+local autoToggle = createButton(typerPage, "AUTO: ON", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 13)
 
 local countLabel = Instance.new("TextLabel")
 countLabel.BackgroundTransparency = 1
 countLabel.Text = "CAPTURE COUNT"
 countLabel.TextColor3 = COLORS.muted
-countLabel.Font = Enum.Font.Gotham
+countLabel.Font = Enum.Font.GothamBold
 countLabel.TextSize = 10
 countLabel.Size = UDim2.new(1, -8, 0, 18)
 countLabel.Parent = typerPage
 
 local countBox = Instance.new("TextBox")
-countBox.Size = UDim2.new(1, -8, 0, 34)
+countBox.Size = UDim2.new(1, -8, 0, 36)
 countBox.BackgroundColor3 = COLORS.panel
 countBox.BorderSizePixel = 0
 countBox.Text = tostring(captureCount)
 countBox.TextColor3 = COLORS.text
 countBox.Font = Enum.Font.Gotham
-countBox.TextSize = 12
+countBox.TextSize = 13
 countBox.Parent = typerPage
 corner(countBox, 8)
+local countStroke = Instance.new("UIStroke", countBox)
+countStroke.Color = COLORS.panel3
+countBox.Focused:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+countBox.FocusLost:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
 
 local previewLabel = Instance.new("TextLabel")
 previewLabel.BackgroundTransparency = 1
 previewLabel.Text = "LAST CODE"
 previewLabel.TextColor3 = COLORS.muted
-previewLabel.Font = Enum.Font.Gotham
+previewLabel.Font = Enum.Font.GothamBold
 previewLabel.TextSize = 10
 previewLabel.Size = UDim2.new(1, -8, 0, 18)
 previewLabel.Parent = typerPage
 
 local preview = Instance.new("TextLabel")
-preview.Size = UDim2.new(1, -8, 0, 45)
+preview.Size = UDim2.new(1, -8, 0, 48)
 preview.BackgroundColor3 = COLORS.panel
 preview.BorderSizePixel = 0
 preview.Text = "Waiting..."
 preview.TextColor3 = COLORS.text
 preview.Font = Enum.Font.GothamBold
-preview.TextSize = 14
+preview.TextSize = 15
 preview.TextWrapped = true
 preview.Parent = typerPage
 corner(preview, 8)
 
-local force = Instance.new("TextButton")
-force.Size = UDim2.new(1, -8, 0, 38)
-force.BackgroundColor3 = COLORS.accent
-force.BorderSizePixel = 0
-force.Text = "⚡ FORCE SCAN + REDEEM"
-force.TextColor3 = COLORS.text
-force.Font = Enum.Font.GothamBold
-force.TextSize = 11
-force.AutoButtonColor = true
-force.Parent = typerPage
-corner(force, 8)
+local force = createButton(typerPage, "⚡ FORCE SCAN + REDEEM", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.accent, COLORS.text, 13)
 
 local manualLabel = Instance.new("TextLabel")
 manualLabel.BackgroundTransparency = 1
 manualLabel.Text = "MANUAL REDEEM"
 manualLabel.TextColor3 = COLORS.muted
-manualLabel.Font = Enum.Font.Gotham
+manualLabel.Font = Enum.Font.GothamBold
 manualLabel.TextSize = 10
 manualLabel.Size = UDim2.new(1, -8, 0, 18)
 manualLabel.Parent = typerPage
 
 local manualRow = Instance.new("Frame")
-manualRow.Size = UDim2.new(1, -8, 0, 36)
+manualRow.Size = UDim2.new(1, -8, 0, 38)
 manualRow.BackgroundTransparency = 1
 manualRow.Parent = typerPage
 
 local manualBox = Instance.new("TextBox")
-manualBox.Size = UDim2.new(1, -80, 1, 0)
+manualBox.Size = UDim2.new(1, -84, 1, 0)
 manualBox.BackgroundColor3 = COLORS.panel
 manualBox.BorderSizePixel = 0
 manualBox.Text = ""
@@ -577,19 +624,12 @@ manualBox.Font = Enum.Font.Gotham
 manualBox.TextSize = 12
 manualBox.Parent = manualRow
 corner(manualBox, 8)
+local manualStroke = Instance.new("UIStroke", manualBox)
+manualStroke.Color = COLORS.panel3
+manualBox.Focused:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+manualBox.FocusLost:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
 
-local manualRedeem = Instance.new("TextButton")
-manualRedeem.Size = UDim2.new(0, 75, 1, 0)
-manualRedeem.Position = UDim2.new(1, -75, 0, 0)
-manualRedeem.BackgroundColor3 = COLORS.panel3
-manualRedeem.BorderSizePixel = 0
-manualRedeem.Text = "REDEEM"
-manualRedeem.TextColor3 = COLORS.text
-manualRedeem.Font = Enum.Font.GothamBold
-manualRedeem.TextSize = 10
-manualRedeem.AutoButtonColor = true
-manualRedeem.Parent = manualRow
-corner(manualRedeem, 8)
+local manualRedeem = createButton(manualRow, "REDEEM", UDim2.new(0, 78, 1, 0), UDim2.new(1, -78, 0, 0), COLORS.panel3, COLORS.text, 11)
 
 -- ========== KEYWORDS PAGE ==========
 local keywordBoxes = {}
@@ -598,22 +638,26 @@ for i = 1, 10 do
     label.BackgroundTransparency = 1
     label.Text = "KEYWORD " .. i
     label.TextColor3 = COLORS.muted
-    label.Font = Enum.Font.Gotham
+    label.Font = Enum.Font.GothamBold
     label.TextSize = 9
     label.Size = UDim2.new(1, -8, 0, 16)
     label.Parent = keywordPage
 
     local box = Instance.new("TextBox")
-    box.Size = UDim2.new(1, -8, 0, 32)
+    box.Size = UDim2.new(1, -8, 0, 34)
     box.BackgroundColor3 = COLORS.panel
     box.BorderSizePixel = 0
     box.Text = keywords[i]
     box.PlaceholderText = "Example: code is"
     box.TextColor3 = COLORS.text
     box.Font = Enum.Font.Gotham
-    box.TextSize = 11
+    box.TextSize = 12
     box.Parent = keywordPage
-    corner(box, 8)
+    corner(box, 6)
+    local bStroke = Instance.new("UIStroke", box)
+    bStroke.Color = COLORS.panel3
+    box.Focused:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+    box.FocusLost:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
 
     keywordBoxes[i] = box
     box.FocusLost:Connect(function()
@@ -627,7 +671,7 @@ end
 local replaceBoxes = {}
 for i = 1, 10 do
     local row = Instance.new("Frame")
-    row.Size = UDim2.new(1, -8, 0, 34)
+    row.Size = UDim2.new(1, -8, 0, 36)
     row.BackgroundTransparency = 1
     row.Parent = replacePage
 
@@ -677,13 +721,13 @@ local snipeTitle = Instance.new("TextLabel")
 snipeTitle.BackgroundTransparency = 1
 snipeTitle.Text = "SNIPE LOG"
 snipeTitle.TextColor3 = COLORS.accentLt
-snipeTitle.Font = Enum.Font.Gotham
+snipeTitle.Font = Enum.Font.GothamBold
 snipeTitle.TextSize = 10
 snipeTitle.Size = UDim2.new(1, -8, 0, 20)
 snipeTitle.Parent = snipePage
 
 local snipeList = Instance.new("ScrollingFrame")
-snipeList.Size = UDim2.new(1, -8, 0, 180)
+snipeList.Size = UDim2.new(1, -8, 0, 220)
 snipeList.BackgroundColor3 = COLORS.panel
 snipeList.BorderSizePixel = 0
 snipeList.ScrollBarThickness = 3
@@ -691,9 +735,10 @@ snipeList.CanvasSize = UDim2.new(0, 0, 0, 0)
 snipeList.AutomaticCanvasSize = Enum.AutomaticSize.Y
 snipeList.Parent = snipePage
 corner(snipeList, 8)
+Instance.new("UIStroke", snipeList).Color = COLORS.panel2
 
 local snipeLayout = Instance.new("UIListLayout")
-snipeLayout.Padding = UDim.new(0, 5)
+snipeLayout.Padding = UDim.new(0, 6)
 snipeLayout.Parent = snipeList
 padding(snipeList, 8, 8, 8, 8)
 
@@ -703,33 +748,110 @@ noSnipes.BackgroundTransparency = 1
 noSnipes.Text = "No snipes yet."
 noSnipes.TextColor3 = COLORS.muted
 noSnipes.Font = Enum.Font.Gotham
-noSnipes.TextSize = 11
+noSnipes.TextSize = 12
 noSnipes.Parent = snipeList
 
 local function addSnipe(message, color)
     if noSnipes and noSnipes.Parent then noSnipes:Destroy() end
-    local item = Instance.new("TextLabel")
-    item.Size = UDim2.new(1, 0, 0, 38)
+    local item = Instance.new("Frame")
+    item.Size = UDim2.new(1, 0, 0, 42)
     item.BackgroundColor3 = COLORS.panel2
     item.BorderSizePixel = 0
-    item.Text = message
-    item.TextColor3 = color or COLORS.text
-    item.Font = Enum.Font.GothamBold
-    item.TextSize = 11
-    item.TextWrapped = true
-    item.TextXAlignment = Enum.TextXAlignment.Left
     item.Parent = snipeList
     corner(item, 6)
-    padding(item, 8, 6, 4, 4)
+    
+    local leftBar = Instance.new("Frame")
+    leftBar.Size = UDim2.new(0, 4, 1, 0)
+    leftBar.BackgroundColor3 = color or COLORS.accent
+    leftBar.BorderSizePixel = 0
+    leftBar.Parent = item
+    corner(leftBar, 2)
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -12, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = message
+    label.TextColor3 = color or COLORS.text
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 11
+    label.TextWrapped = true
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = item
+
     task.delay(30, function() if item and item.Parent then item:Destroy() end end)
 end
+
+-- ========== STATS PAGE ==========
+local statsTitle = Instance.new("TextLabel")
+statsTitle.BackgroundTransparency = 1
+statsTitle.Text = "SESSION STATS"
+statsTitle.TextColor3 = COLORS.accentLt
+statsTitle.Font = Enum.Font.GothamBold
+statsTitle.TextSize = 10
+statsTitle.Size = UDim2.new(1, -8, 0, 20)
+statsTitle.Parent = statsPage
+
+local function createStatCard(parent, text, value, order)
+    local card = Instance.new("Frame")
+    card.Size = UDim2.new(1, -8, 0, 55)
+    card.BackgroundColor3 = COLORS.panel
+    card.BorderSizePixel = 0
+    card.LayoutOrder = order
+    card.Parent = parent
+    corner(card, 8)
+    Instance.new("UIStroke", card).Color = COLORS.panel2
+
+    local valLabel = Instance.new("TextLabel")
+    valLabel.Size = UDim2.new(1, -16, 0, 28)
+    valLabel.Position = UDim2.new(0, 8, 0, 8)
+    valLabel.BackgroundTransparency = 1
+    valLabel.Text = value
+    valLabel.TextColor3 = COLORS.text
+    valLabel.Font = Enum.Font.GothamBlack
+    valLabel.TextSize = 18
+    valLabel.TextXAlignment = Enum.TextXAlignment.Left
+    valLabel.Parent = card
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, -16, 0, 14)
+    textLabel.Position = UDim2.new(0, 8, 0, 36)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = text
+    textLabel.TextColor3 = COLORS.muted
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextSize = 10
+    textLabel.TextXAlignment = Enum.TextXAlignment.Left
+    textLabel.Parent = card
+    
+    return valLabel
+end
+
+local timeVal = createStatCard(statsPage, "SESSION TIME", "00:00:00", 1)
+local codesVal = createStatCard(statsPage, "CODES REDEEMED", "0", 2)
+local brainrotsVal = createStatCard(statsPage, "BRAINROTS SNIPED", "0", 3)
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if keyVerified and gui.Parent then
+            local elapsed = os.time() - sessionStats.startTime
+            local hours = math.floor(elapsed / 3600)
+            local mins = math.floor((elapsed % 3600) / 60)
+            local secs = elapsed % 60
+            timeVal.Text = string.format("%02d:%02d:%02d", hours, mins, secs)
+            codesVal.Text = tostring(sessionStats.codesRedeemed)
+            brainrotsVal.Text = tostring(sessionStats.brainrotsSniped)
+        end
+    end
+end)
 
 -- ========== SETTINGS PAGE ==========
 local settingsTitle = Instance.new("TextLabel")
 settingsTitle.BackgroundTransparency = 1
 settingsTitle.Text = "SETTINGS"
 settingsTitle.TextColor3 = COLORS.accentLt
-settingsTitle.Font = Enum.Font.Gotham
+settingsTitle.Font = Enum.Font.GothamBold
 settingsTitle.TextSize = 10
 settingsTitle.Size = UDim2.new(1, -8, 0, 20)
 settingsTitle.Parent = settingsPage
@@ -738,39 +860,19 @@ local antiAfkLabel = Instance.new("TextLabel")
 antiAfkLabel.BackgroundTransparency = 1
 antiAfkLabel.Text = "ANTI-AFK (Bypass 20 min kick)"
 antiAfkLabel.TextColor3 = COLORS.muted
-antiAfkLabel.Font = Enum.Font.Gotham
+antiAfkLabel.Font = Enum.Font.GothamBold
 antiAfkLabel.TextSize = 10
 antiAfkLabel.Size = UDim2.new(1, -8, 0, 18)
 antiAfkLabel.Parent = settingsPage
 
-local antiAfkToggle = Instance.new("TextButton")
-antiAfkToggle.Size = UDim2.new(1, -8, 0, 38)
-antiAfkToggle.BackgroundColor3 = COLORS.good
-antiAfkToggle.BorderSizePixel = 0
-antiAfkToggle.Text = antiAfkEnabled and "ANTI-AFK: ON" or "ANTI-AFK: OFF"
-antiAfkToggle.TextColor3 = COLORS.text
-antiAfkToggle.Font = Enum.Font.GothamBold
-antiAfkToggle.TextSize = 12
-antiAfkToggle.AutoButtonColor = true
-antiAfkToggle.Parent = settingsPage
-corner(antiAfkToggle, 8)
+local antiAfkToggle = createButton(settingsPage, "ANTI-AFK: ON", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 13)
 
 local spacer1 = Instance.new("Frame")
 spacer1.Size = UDim2.new(1, -8, 0, 10)
 spacer1.BackgroundTransparency = 1
 spacer1.Parent = settingsPage
 
-local resetButton = Instance.new("TextButton")
-resetButton.Size = UDim2.new(1, -8, 0, 38)
-resetButton.BackgroundColor3 = COLORS.panel2
-resetButton.BorderSizePixel = 0
-resetButton.Text = "RESET CONFIG"
-resetButton.TextColor3 = COLORS.text
-resetButton.Font = Enum.Font.GothamBold
-resetButton.TextSize = 12
-resetButton.AutoButtonColor = true
-resetButton.Parent = settingsPage
-corner(resetButton, 8)
+local resetButton = createButton(settingsPage, "RESET CONFIG", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.panel2, COLORS.text, 13)
 
 local spacer2 = Instance.new("Frame")
 spacer2.Size = UDim2.new(1, -8, 0, 10)
@@ -790,6 +892,7 @@ statusLabel.TextXAlignment = Enum.TextXAlignment.Left
 statusLabel.Parent = settingsPage
 corner(statusLabel, 8)
 padding(statusLabel, 10, 10, 8, 8)
+Instance.new("UIStroke", statusLabel).Color = COLORS.panel2
 
 -- ========== LOGIC & FUNCTIONS ==========
 local function updatePreview()
@@ -857,6 +960,7 @@ local function redeemCode(code)
     
     if success then
         lastCode = code
+        sessionStats.codesRedeemed = sessionStats.codesRedeemed + 1
         logStatus("✓ Redeemed: " .. code, "success")
     else
         logStatus("✗ UI unavailable for: " .. code, "error")
@@ -895,9 +999,6 @@ local function applyReplacement(text)
     return nil
 end
 
--- ==========================================
--- BRAINROT NAME PARSER
--- ==========================================
 local function parseRewardFromText(rawText)
     if not rawText then return nil end
     local text = rawText:gsub("<.->", "")
@@ -955,6 +1056,7 @@ local function dispatch(rawText)
     
     local rewardName = parseRewardFromText(rawText)
     if rewardName then
+        sessionStats.brainrotsSniped = sessionStats.brainrotsSniped + 1
         local msg = "🌮 Sniped " .. rewardName .. "!"
         logStatus(msg, "success")
         addSnipe(msg, COLORS.good)
@@ -1097,7 +1199,6 @@ local function refreshAntiAfk()
 end
 
 force.Activated:Connect(function() setForceScan(not forceScan) end)
-
 autoToggle.Activated:Connect(function()
     autoCode = not autoCode
     config.autoCode = autoCode
@@ -1158,16 +1259,34 @@ resetButton.Activated:Connect(function()
     logStatus("Configuration reset.", "success")
 end)
 
-local currentTab = math.clamp(tonumber(config.tab) or 1, 1, 5)
+local currentTab = math.clamp(tonumber(config.tab) or 1, 1, #tabNames)
 local minimized = config.minimized == true
 
 local function setTab(index)
     currentTab = index
-    for i, page in ipairs(pages) do page.Visible = (i == index) and not minimized end
+    
+    local targetBtn = tabButtons[index]
+    if targetBtn then
+        TweenService:Create(tabIndicator, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+            Position = targetBtn.Position,
+            Size = targetBtn.Size
+        }):Play()
+    end
+
+    for i, page in ipairs(pages) do 
+        if i == index then
+            page.Visible = true
+            page.GroupTransparency = 1
+            TweenService:Create(page, TweenInfo.new(0.2), {GroupTransparency = 0}):Play()
+        else
+            page.Visible = false 
+        end
+    end
+    
     for i, button in ipairs(tabButtons) do
         local isSelected = i == index
-        button.BackgroundColor3 = isSelected and COLORS.panel2 or COLORS.panel
         button.TextColor3 = isSelected and COLORS.text or COLORS.muted
+        button.BackgroundColor3 = isSelected and COLORS.panel2 or COLORS.panel
     end
     config.tab = index
     saveConfig()
@@ -1181,21 +1300,21 @@ local miniButton = Instance.new("TextButton")
 miniButton.Size = UDim2.new(0, 70, 0, 40)
 miniButton.AnchorPoint = Vector2.new(0.5, 0.5)
 miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
-miniButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+miniButton.BackgroundColor3 = Color3.fromRGB(120, 50, 255)
 miniButton.BorderSizePixel = 0
 miniButton.Text = "LANDER"
 miniButton.Font = Enum.Font.GothamBlack
 miniButton.TextSize = 12
 miniButton.TextColor3 = Color3.new(1, 1, 1)
-miniButton.AutoButtonColor = true
+miniButton.AutoButtonColor = false
 miniButton.Visible = false
 miniButton.Parent = safeContainer
 corner(miniButton, 10)
-stroke(miniButton, Color3.fromRGB(255, 255, 255), 1, 0.15)
+Instance.new("UIStroke", miniButton).Color = Color3.fromRGB(160, 90, 255)
 
 local miniRgbConnection = RunService.RenderStepped:Connect(function()
     if miniButton and miniButton.Parent then
-        miniButton.BackgroundColor3 = Color3.fromHSV((os.clock() * 0.18) % 1, 0.9, 1)
+        miniButton.BackgroundColor3 = Color3.fromHSV((os.clock() * 0.18) % 1, 0.8, 1)
     elseif miniRgbConnection then
         miniRgbConnection:Disconnect()
         miniRgbConnection = nil
@@ -1227,7 +1346,7 @@ local function applyMinimized()
     miniButton.Visible = minimized
     if minimized then
         main.Visible = true
-        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, BASE_W, 0, 40)}):Play()
+        TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, BASE_W, 0, 44)}):Play()
         task.delay(0.25, function() if minimized then main.Visible = false end end)
         updateMiniPulse()
     else
@@ -1250,15 +1369,6 @@ miniButton.Activated:Connect(function()
     applyMinimized()
 end)
 
-miniButton.MouseButton1Down:Connect(function()
-    TweenService:Create(miniButton, TweenInfo.new(0.08), {Size = UDim2.new(0, 64, 0, 36)}):Play()
-end)
-
-miniButton.MouseButton1Up:Connect(function()
-    TweenService:Create(miniButton, TweenInfo.new(0.12), {Size = UDim2.new(0, 70, 0, 40)}):Play()
-end)
-
--- Drag Main
 do
     local dragging = false
     local dragStart, startPos
@@ -1288,7 +1398,6 @@ do
     end)
 end
 
--- Drag Mini
 do
     local dragging = false
     miniButton.InputBegan:Connect(function(input)
@@ -1330,6 +1439,10 @@ main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0)
 miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
 
+main.Visible = true
+main.Size = UDim2.new(0, BASE_W, 0, 0)
+TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, BASE_W, 0, BASE_H)}):Play()
+
 refreshAuto()
 refreshAntiAfk()
 setTab(currentTab)
@@ -1346,9 +1459,6 @@ end)
 UserInputService.InputBegan:Connect(function() lastActivityTime = os.clock() end)
 UserInputService.WindowFocused:Connect(function() lastActivityTime = os.clock() end)
 
--- ==========================================
--- ANTI-AFK LOGIC & KEY TIMER RESET
--- ==========================================
 if VirtualUser then
     player.Idled:Connect(function()
         if antiAfkEnabled and keyVerified then
@@ -1377,4 +1487,4 @@ task.spawn(function()
     end
 end)
 
-print("7. Main UI Fully Loaded!")
+print("Lander Hub Fully Loaded!")
