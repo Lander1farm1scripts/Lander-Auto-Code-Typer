@@ -20,7 +20,7 @@ pcall(function()
 end)
 
 -- ========== ADMIN WHITELIST ==========
-local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2", "Landeralt00"}
+local ADMIN_LIST = {"TcoAlarmSystemV2", "Madila918", "Landeralt00"}
 local isLocalAdmin = false
 local lowerName = string.lower(player.Name)
 for _, name in ipairs(ADMIN_LIST) do
