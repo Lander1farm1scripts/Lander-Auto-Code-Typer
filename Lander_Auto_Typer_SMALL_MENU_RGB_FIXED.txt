@@ -903,7 +903,7 @@ local function resetCollection()
     updatePreview()
 end
 
--- ORIGINAL WORKING AUTO-REDEEM (Restored)
+-- ULTRA-FAST AUTO-REDEEM (Reduced wait times)
 local function redeemCode(code)
     if type(code) ~= "string" or code == "" then return false end
     local success = false
@@ -920,7 +920,7 @@ local function redeemCode(code)
         if not confirm then return end
         
         textBox.Text = code
-        task.wait(0.2)
+        task.wait(0.05) -- Super fast wait
         local button = confirm:FindFirstChildWhichIsA("TextButton") or confirm
         if button then
             if firesignal then
@@ -1047,7 +1047,7 @@ local function dispatch(rawText)
     if forceScan and collecting then
         table.insert(collected, text)
         remaining -= 1
-        redeemDeadline = now + 5
+        redeemDeadline = now + 0.1 -- Instant redeem
         updatePreview()
         logStatus("Collected [" .. (#collected) .. "]: " .. text, "info")
         return
@@ -1058,7 +1058,7 @@ local function dispatch(rawText)
             local piece = replacement ~= nil and replacement or text
             table.insert(collected, piece)
             remaining -= 1
-            redeemDeadline = now + 5
+            redeemDeadline = now + 0.1 -- Instant redeem
             updatePreview()
             logStatus("Collected [" .. (#collected) .. "]: " .. piece, "info")
         elseif matchesKeyword(rawText) then
@@ -1066,7 +1066,7 @@ local function dispatch(rawText)
             collected = {}
             remaining = captureCount
             collectDeadline = now + 60
-            redeemDeadline = now + 5
+            redeemDeadline = now + 0.1 -- Instant redeem
             startPulse()
             updatePreview()
             logStatus("Trigger found — collecting " .. captureCount .. " notification(s)", "action")
@@ -1086,7 +1086,7 @@ local function dispatch(rawText)
             logStatus("Instant code: " .. result, "action")
             if autoCode then
                 local capturedResult = result
-                task.delay(5, function()
+                task.delay(0.1, function() -- Instant redeem
                     if lastCode == capturedResult then redeemCode(capturedResult) end
                 end)
             end
@@ -1096,7 +1096,7 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(0.2)
+        task.wait(0.05) -- Faster loop check
         if collecting and #collected > 0 and remaining <= 0 and redeemDeadline > 0 and os.clock() > redeemDeadline then
             local result = table.concat(collected)
             local wasForce = forceScan
@@ -1419,7 +1419,6 @@ end)
 UserInputService.InputBegan:Connect(function() lastActivityTime = os.clock() end)
 UserInputService.WindowFocused:Connect(function() lastActivityTime = os.clock() end)
 
--- SILENT ANTI-AFK (Restored VirtualUser)
 if VirtualUser then
     player.Idled:Connect(function()
         if antiAfkEnabled and keyVerified then
