@@ -6,8 +6,6 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 
-local VirtualUser = nil
-pcall(function() VirtualUser = game:GetService("VirtualUser") end)
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -21,16 +19,7 @@ end)
 
 -- ========== ADMIN WHITELIST ==========
 local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2", "Landeralt00"}
-local isLocalAdmin = false
-local lowerName = string.lower(player.Name)
-for _, name in ipairs(ADMIN_LIST) do
-    if string.lower(name) == lowerName then isLocalAdmin = true break end
-end
 
-local isTuesday = (os.date("*t").wday == 3)
-
-if not isTuesday and not isLocalAdmin then
-    local closedGui = Instance.new("ScreenGui")
     closedGui.Name = "LanderClosed"
     closedGui.IgnoreGuiInset = true
     closedGui.Parent = PlayerGui
