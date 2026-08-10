@@ -17,8 +17,7 @@ pcall(function()
     if PlayerGui:FindFirstChild("LanderHubKey") then PlayerGui.LanderHubKey:Destroy() end
 end)
 
--- ========== ADMIN WHITELIST ==========
-local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2", "Landeralt00"}
+
 
     closedGui.Name = "LanderClosed"
     closedGui.IgnoreGuiInset = true
