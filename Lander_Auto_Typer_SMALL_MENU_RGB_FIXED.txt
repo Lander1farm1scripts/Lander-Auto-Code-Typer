@@ -6,9 +6,12 @@ local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
 local RunService = game:GetService("RunService")
 
+local VirtualUser = nil
+pcall(function() VirtualUser = game:GetService("VirtualUser") end)
+
 local player = Players.LocalPlayer
 if not player then return end
-local PlayerGui = player:WaitForChild("PlayerGui") -- Changed to WaitForChild to prevent loading errors
+local PlayerGui = player:WaitForChild("PlayerGui")
 
 -- Cleanup old GUIs to prevent overlapping
 pcall(function()
@@ -900,7 +903,7 @@ local function resetCollection()
     updatePreview()
 end
 
--- ANTI-CHEAT SAFE REDEEM (Removed firesignal)
+-- ORIGINAL WORKING AUTO-REDEEM (Restored)
 local function redeemCode(code)
     if type(code) ~= "string" or code == "" then return false end
     local success = false
@@ -918,11 +921,16 @@ local function redeemCode(code)
         
         textBox.Text = code
         task.wait(0.2)
-        
-        local button = confirm:FindFirstChildWhichIsA("TextButton") or (confirm:IsA("TextButton") and confirm or nil)
-        if button and button:IsA("GuiButton") then
-            button:Activate()
-            success = true
+        local button = confirm:FindFirstChildWhichIsA("TextButton") or confirm
+        if button then
+            if firesignal then
+                firesignal(button.MouseButton1Click)
+                firesignal(button.Activated)
+                success = true
+            elseif button:IsA("GuiButton") then
+                button:Activate()
+                success = true
+            end
         end
     end)
     
@@ -1106,7 +1114,6 @@ task.spawn(function()
     end
 end)
 
--- ANTI-CHEAT SAFE HOOKING (Only targets Notification UI)
 local function ownedByUs(obj)
     local current = obj
     while current and current ~= game do
@@ -1116,42 +1123,36 @@ local function ownedByUs(obj)
     return false
 end
 
-local function safeHookLabel(label)
-    if seen[label] or ownedByUs(label) then return end
-    seen[label] = true
-    label:GetPropertyChangedSignal("Text"):Connect(function()
-        if ownedByUs(label) or label.Text == "" then return end
-        dispatch(label.Text)
+local function hookObject(obj)
+    if seen[obj] or ownedByUs(obj) then return end
+    seen[obj] = true
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+        obj:GetPropertyChangedSignal("Text"):Connect(function()
+            if ownedByUs(obj) or obj.Text == "" then return end
+            dispatch(obj.Text)
+        end)
+        if obj.Text and obj.Text ~= "" then dispatch(obj.Text) end
+    end
+    obj.DescendantAdded:Connect(function(child)
+        if ownedByUs(child) then return end
+        hookObject(child)
     end)
-    if label.Text and label.Text ~= "" then dispatch(label.Text) end
 end
 
-local function safeHookNotificationContainer(container)
-    if not container then return end
-    for _, child in ipairs(container:GetDescendants()) do
-        if child:IsA("TextLabel") then
-            safeHookLabel(child)
-        end
-    end
-    container.DescendantAdded:Connect(function(child)
-        if child:IsA("TextLabel") then
-            safeHookLabel(child)
-        end
-    end)
+local function watchTree(obj)
+    if not obj or ownedByUs(obj) then return end
+    hookObject(obj)
+    for _, child in ipairs(obj:GetDescendants()) do hookObject(child) end
 end
 
 local function hookNotificationUI()
-    local notifNames = {"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}
-    for _, name in ipairs(notifNames) do
+    for _, name in ipairs({"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}) do
         local existing = PlayerGui:FindFirstChild(name)
-        if existing then safeHookNotificationContainer(existing) end
+        if existing then watchTree(existing) end
     end
     PlayerGui.ChildAdded:Connect(function(child)
-        for _, name in ipairs(notifNames) do
-            if child.Name == name then 
-                safeHookNotificationContainer(child) 
-                break 
-            end
+        for _, name in ipairs({"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}) do
+            if child.Name == name then watchTree(child) break end
         end
     end)
 end
@@ -1418,18 +1419,18 @@ end)
 UserInputService.InputBegan:Connect(function() lastActivityTime = os.clock() end)
 UserInputService.WindowFocused:Connect(function() lastActivityTime = os.clock() end)
 
--- ANTI-AFK LOGIC (No VirtualUser - Anti-Cheat Safe)
-player.Idled:Connect(function()
-    if antiAfkEnabled and keyVerified then
-        pcall(function()
-            local char = player.Character
-            if char and char:FindFirstChild("Humanoid") then
-                char.Humanoid.Jump = true
-            end
-        end)
-        lastActivityTime = os.clock()
-    end
-end)
+-- SILENT ANTI-AFK (Restored VirtualUser)
+if VirtualUser then
+    player.Idled:Connect(function()
+        if antiAfkEnabled and keyVerified then
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new())
+            end)
+            lastActivityTime = os.clock()
+        end
+    end)
+end
 
 task.spawn(function()
     while true do
