@@ -8,8 +8,7 @@ local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 if not player then return end
-local PlayerGui = player:FindFirstChildOfClass("PlayerGui")
-if not PlayerGui then return end
+local PlayerGui = player:WaitForChild("PlayerGui") -- Changed to WaitForChild to prevent loading errors
 
 -- Cleanup old GUIs to prevent overlapping
 pcall(function()
@@ -18,11 +17,15 @@ pcall(function()
     if PlayerGui:FindFirstChild("LanderClosed") then PlayerGui.LanderClosed:Destroy() end
 end)
 
--- ========== ADMIN WHITELIST ==========
+-- ========== ADMIN WHITELIST (Case-Insensitive) ==========
 local ADMIN_LIST = {"TcoAlarmSystemV2", "Lander_TTVstorage2", "Landeralt00"}
 local isLocalAdmin = false
+local lowerName = string.lower(player.Name)
 for _, name in ipairs(ADMIN_LIST) do
-    if name == player.Name then isLocalAdmin = true break end
+    if string.lower(name) == lowerName then 
+        isLocalAdmin = true 
+        break 
+    end
 end
 
 local isTuesday = (os.date("*t").wday == 3)
@@ -918,7 +921,6 @@ local function redeemCode(code)
         
         local button = confirm:FindFirstChildWhichIsA("TextButton") or (confirm:IsA("TextButton") and confirm or nil)
         if button and button:IsA("GuiButton") then
-            -- Use native Activate instead of firesignal to bypass anti-cheat
             button:Activate()
             success = true
         end
