@@ -1,4 +1,4 @@
-print("Lander Hub Loading...")
+print("Lander Hub Starting...")
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -13,57 +13,7 @@ local PlayerGui = player:WaitForChild("PlayerGui")
 -- Cleanup old GUIs
 pcall(function()
     if PlayerGui:FindFirstChild("LanderAutoTyper") then PlayerGui.LanderAutoTyper:Destroy() end
-    if PlayerGui:FindFirstChild("LanderHubKey") then PlayerGui.LanderHubKey:Destroy() end
-    if PlayerGui:FindFirstChild("LanderClosed") then PlayerGui.LanderClosed:Destroy() end
 end)
-
--- ========== ADMIN WHITELIST ==========
-local ADMIN_LIST = {"TcoAlarmSystemV2", "Madila918", "Landeralt00"}
-local isLocalAdmin = false
-local lowerName = string.lower(player.Name)
-for _, name in ipairs(ADMIN_LIST) do
-    if string.lower(name) == lowerName then isLocalAdmin = true break end
-end
-
-local isTuesday = (os.date("*t").wday == 3)
-
-if not isTuesday and not isLocalAdmin then
-    local closedGui = Instance.new("ScreenGui")
-    closedGui.Name = "LanderClosed"
-    closedGui.IgnoreGuiInset = true
-    closedGui.Parent = PlayerGui
-    local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 280, 0, 160)
-    main.AnchorPoint = Vector2.new(0.5, 0.5)
-    main.Position = UDim2.new(0.5, 0, 0.5, 0)
-    main.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
-    main.BorderSizePixel = 0
-    main.Parent = closedGui
-    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-    local us = Instance.new("UIStroke", main)
-    us.Thickness = 2
-    us.Color = Color3.fromRGB(245, 190, 65)
-    local title = Instance.new("TextLabel")
-    title.BackgroundTransparency = 1
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 15)
-    title.Text = "🌮 TACO TUESDAY ONLY"
-    title.Font = Enum.Font.GothamBlack
-    title.TextSize = 16
-    title.TextColor3 = Color3.fromRGB(245, 190, 65)
-    title.Parent = main
-    local desc = Instance.new("TextLabel")
-    desc.BackgroundTransparency = 1
-    desc.Size = UDim2.new(1, -40, 0, 60)
-    desc.Position = UDim2.new(0, 20, 0, 60)
-    desc.Text = "The script is locked. Come back on Tuesday!"
-    desc.Font = Enum.Font.GothamMedium
-    desc.TextSize = 12
-    desc.TextColor3 = Color3.fromRGB(150, 150, 160)
-    desc.TextWrapped = true
-    desc.Parent = main
-    return
-end
 
 local CONFIG_FILE = "lander_auto_typer_config.json"
 local config = {
@@ -75,89 +25,61 @@ local config = {
         {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""},
         {kw = "", rep = ""}
     },
-    minimized = false, tab = 1, posX = 0.5, posY = 0.5, miniX = 0.88, miniY = 0.12,
-    antiAfk = true,
+    minimized = false, tab = 1, posX = 0.5, posY = 0.5, miniX = 0.88, miniY = 0.12
 }
 
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1536140418838958080/Kf_pxYPLwUbfd6SZ-1iJtTlS_-8Mgu23BcKEXVdkAMuGaZsJeRJNKotvUiPJQrxKHUAl"
-local VERIFY_URL = "https://discord-snipe-relay.onrender.com/verify-key"
-local CHECK_START_URL = "https://discord-snipe-relay.onrender.com/check-start"
 
-local keyVerified = isLocalAdmin 
-local trialMode = false
-local trialStartTime = 0
 local lastCode = ""
-local antiAfkEnabled = config.antiAfk == true
-local eventStarted = false
-
 local sessionStats = { startTime = os.time(), codesRedeemed = 0, brainrotsSniped = 0 }
 
 local COLORS = {
-    bg = Color3.fromRGB(10, 10, 15),
-    bgAlt = Color3.fromRGB(15, 15, 22),
-    panel = Color3.fromRGB(22, 22, 32),
-    panelHover = Color3.fromRGB(30, 30, 42),
-    panelActive = Color3.fromRGB(35, 35, 48),
-    accent = Color3.fromRGB(138, 43, 226),
-    accentLt = Color3.fromRGB(168, 85, 247),
-    text = Color3.fromRGB(250, 250, 252),
-    muted = Color3.fromRGB(160, 160, 170),
-    dim = Color3.fromRGB(120, 120, 130),
-    good = Color3.fromRGB(34, 197, 94),
-    bad = Color3.fromRGB(239, 68, 68),
-    warn = Color3.fromRGB(250, 204, 21),
-    border = Color3.fromRGB(45, 45, 60),
+    bg = Color3.fromRGB(13, 13, 18), panel = Color3.fromRGB(20, 20, 28),
+    panel2 = Color3.fromRGB(28, 28, 38), panel3 = Color3.fromRGB(38, 38, 50),
+    accent = Color3.fromRGB(120, 50, 255), accentLt = Color3.fromRGB(160, 90, 255),
+    text = Color3.fromRGB(245, 245, 250), muted = Color3.fromRGB(150, 150, 160),
+    good = Color3.fromRGB(50, 200, 120), bad = Color3.fromRGB(230, 70, 80),
+    warn = Color3.fromRGB(245, 190, 65)
 }
 
-local function corner(obj, r)
-    local c = Instance.new("UICorner") c.CornerRadius = UDim.new(0, r or 10) c.Parent = obj return c
-end
-local function stroke(obj, color, thickness, transparency)
-    local s = Instance.new("UIStroke") s.Color = color or COLORS.border s.Thickness = thickness or 1 s.Transparency = transparency or 0.3 s.Parent = obj return s
-end
-local function padding(obj, l, r, t, b)
-    local p = Instance.new("UIPadding") p.PaddingLeft = UDim.new(0, l or 0) p.PaddingRight = UDim.new(0, r or 0) p.PaddingTop = UDim.new(0, t or 0) p.PaddingBottom = UDim.new(0, b or 0) p.Parent = obj return p
-end
+local function corner(obj, r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 8) c.Parent=obj return c end
+local function padding(obj, l, r, t, b) local p=Instance.new("UIPadding") p.PaddingLeft=UDim.new(0,l or 0) p.PaddingRight=UDim.new(0,r or 0) p.PaddingTop=UDim.new(0,t or 0) p.PaddingBottom=UDim.new(0,b or 0) p.Parent=obj return p end
+
 local function createButton(parent, text, size, pos, bgColor, textColor, fontSize)
     local btn = Instance.new("TextButton")
-    btn.Size = size btn.Position = pos btn.BackgroundColor3 = bgColor or COLORS.panel btn.BorderSizePixel = 0
-    btn.Text = text btn.TextColor3 = textColor or COLORS.text btn.Font = Enum.Font.GothamBold btn.TextSize = fontSize or 13
-    btn.AutoButtonColor = false btn.Parent = parent
-    corner(btn, 10) stroke(btn, COLORS.border, 1.5, 0.4)
-    local orig = bgColor or COLORS.panel
-    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = orig:Lerp(Color3.new(1, 1, 1), 0.08)}):Play() end)
-    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = orig}):Play() end)
+    btn.Size = size
+    btn.Position = pos
+    btn.BackgroundColor3 = bgColor or COLORS.panel3
+    btn.BorderSizePixel = 0
+    btn.Text = text
+    btn.TextColor3 = textColor or COLORS.text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = fontSize or 12
+    btn.AutoButtonColor = false
+    btn.Parent = parent
+    corner(btn, 8)
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bgColor or COLORS.panel3}):Play() end)
+    btn.MouseButton1Down:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(0,0,0), 0.2)}):Play() end)
+    btn.MouseButton1Up:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = bgColor or COLORS.panel3}):Play() end)
     return btn
-end
-
--- FIX: All HTTP requests are wrapped in task.spawn to prevent game freezing
-local function relayRequest(url, payload, callback)
-    local requestFunc = (syn and syn.request) or (http and http.request) or (http_request) or request
-    if not requestFunc then if callback then callback(nil, "HTTP unavailable") end return end
-    task.spawn(function()
-        local ok, response = pcall(function() return requestFunc({Url = url, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = HttpService:JSONEncode(payload)}) end)
-        if not ok or not response then if callback then callback(nil, "Request failed") end return end
-        local body = response.Body or response.body or "{}"
-        local decodeOk, data = pcall(function() return HttpService:JSONDecode(body) end)
-        if not decodeOk then if callback then callback(nil, "Invalid response") end return end
-        local status = tonumber(response.StatusCode or 0) or 0
-        if status < 200 or status >= 300 then if callback then callback(nil, data.error or "Invalid key") end return end
-        if callback then callback(data, nil) end
-    end)
 end
 
 local function loadConfig()
     if not (readfile and isfile and isfile(CONFIG_FILE)) then return end
     local ok, decoded = pcall(function() return HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
     if not ok or type(decoded) ~= "table" then return end
-    for key, value in pairs(decoded) do if config[key] ~= nil then config[key] = value end end
+    for key, value in pairs(decoded) do
+        if config[key] ~= nil then config[key] = value end
+    end
 end
+
 local function saveConfig()
     if not (writefile and readfile) then return end
     pcall(function() writefile(CONFIG_FILE, HttpService:JSONEncode(config)) end)
 end
+
 loadConfig()
-antiAfkEnabled = config.antiAfk == true
 
 -- ==========================================
 -- MAIN GUI FUNCTION
@@ -165,189 +87,547 @@ antiAfkEnabled = config.antiAfk == true
 local function loadMainGui()
     local camera = workspace.CurrentCamera
     local viewportSize = camera and camera.ViewportSize or Vector2.new(800, 600)
+
     local function computeScale()
         local w, h = viewportSize.X, viewportSize.Y
-        return math.clamp(math.min(w / 420, h / 580), 0.6, 0.95)
+        local scaleW = w / 420
+        local scaleH = h / 460
+        return math.clamp(math.min(scaleW, scaleH), 0.6, 0.95)
     end
+
     local uiScaleFactor = computeScale()
 
     local gui = Instance.new("ScreenGui")
-    gui.Name = "LanderAutoTyper" gui.ResetOnSpawn = false gui.IgnoreGuiInset = true gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling gui.Parent = PlayerGui
+    gui.Name = "LanderAutoTyper"
+    gui.ResetOnSpawn = false
+    gui.IgnoreGuiInset = true
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Parent = PlayerGui
+
     local safeContainer = Instance.new("Frame")
-    safeContainer.Name = "SafeContainer" safeContainer.BackgroundTransparency = 1 safeContainer.Size = UDim2.new(1, 0, 1, 0) safeContainer.Parent = gui
-    local uiScale = Instance.new("UIScale") uiScale.Scale = uiScaleFactor uiScale.Parent = safeContainer
+    safeContainer.Name = "SafeContainer"
+    safeContainer.BackgroundTransparency = 1
+    safeContainer.Size = UDim2.new(1, 0, 1, 0)
+    safeContainer.Parent = gui
+
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = uiScaleFactor
+    uiScale.Parent = safeContainer
+
     local main = Instance.new("Frame")
-    main.Size = UDim2.new(0, 420, 0, 580) main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0) main.AnchorPoint = Vector2.new(0.5, 0.5)
-    main.BackgroundColor3 = COLORS.bg main.BorderSizePixel = 0 main.Parent = safeContainer corner(main, 16) stroke(main, COLORS.accent, 2, 0.2)
+    main.Size = UDim2.new(0, 380, 0, 420)
+    main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0)
+    main.AnchorPoint = Vector2.new(0.5, 0.5)
+    main.BackgroundColor3 = COLORS.bg
+    main.BorderSizePixel = 0
+    main.Parent = safeContainer
+    corner(main, 12)
+
+    local mainStroke = Instance.new("UIStroke", main)
+    mainStroke.Color = COLORS.accent
+    mainStroke.Thickness = 1.5
+    mainStroke.Transparency = 0.2
+
+    local shadow = Instance.new("ImageLabel")
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 4)
+    shadow.Size = UDim2.new(1, 30, 1, 30)
+    shadow.BackgroundTransparency = 1
+    shadow.Image = "rbxassetid://1316045217"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+    shadow.ImageTransparency = 0.5
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    shadow.ZIndex = main.ZIndex - 1
+    shadow.Parent = main
 
     local top = Instance.new("Frame")
-    top.Size = UDim2.new(1, 0, 0, 70) top.BackgroundColor3 = COLORS.bgAlt top.BorderSizePixel = 0 top.Parent = main corner(top, 16)
-    local headerGrad = Instance.new("Frame")
-    headerGrad.Size = UDim2.new(1, 0, 0, 2) headerGrad.BackgroundColor3 = COLORS.accent headerGrad.BorderSizePixel = 0 headerGrad.Parent = top
-    local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, -90, 0, 30) title.Position = UDim2.new(0, 16, 0, 12) title.BackgroundTransparency = 1 title.Text = "🌮 LANDER HUB" title.TextColor3 = COLORS.text title.Font = Enum.Font.GothamBlack title.TextSize = 18 title.TextXAlignment = Enum.TextXAlignment.Left title.Parent = top
-    local subtitle = Instance.new("TextLabel")
-    subtitle.Size = UDim2.new(1, -90, 0, 16) subtitle.Position = UDim2.new(0, 16, 0, 45) subtitle.BackgroundTransparency = 1 subtitle.Text = "PREMIUM AUTO TYPER" subtitle.TextColor3 = COLORS.accentLt subtitle.Font = Enum.Font.GothamBold subtitle.TextSize = 11 subtitle.TextXAlignment = Enum.TextXAlignment.Left subtitle.Parent = top
+    top.Size = UDim2.new(1, 0, 0, 50)
+    top.BackgroundColor3 = COLORS.panel
+    top.BorderSizePixel = 0
+    top.Parent = main
+    corner(top, 12)
 
-    local minButton = createButton(top, "−", UDim2.new(0, 34, 0, 34), UDim2.new(1, -68, 0, 18), COLORS.panel, COLORS.text, 18)
-    local closeButton = createButton(top, "×", UDim2.new(0, 34, 0, 34), UDim2.new(1, -34, 0, 18), COLORS.bad, COLORS.text, 20)
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -90, 0, 26)
+    title.Position = UDim2.new(0, 16, 0, 8)
+    title.BackgroundTransparency = 1
+    title.Text = "LANDER HUB"
+    title.TextColor3 = COLORS.text
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 17
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = top
+
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, -90, 0, 14)
+    subtitle.Position = UDim2.new(0, 16, 0, 31)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "PREMIUM AUTO TYPER"
+    subtitle.TextColor3 = COLORS.accentLt
+    subtitle.Font = Enum.Font.GothamBold
+    subtitle.TextSize = 9
+    subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.Parent = top
+
+    local minButton = createButton(top, "−", UDim2.new(0, 32, 0, 26), UDim2.new(1, -72, 0, 12), COLORS.panel2, COLORS.text, 18)
+    local closeButton = createButton(top, "×", UDim2.new(0, 32, 0, 26), UDim2.new(1, -36, 0, 12), COLORS.panel2, COLORS.bad, 18)
     closeButton.Activated:Connect(function() gui:Destroy() end)
 
     local tabs = Instance.new("Frame")
-    tabs.Size = UDim2.new(1, -20, 0, 45) tabs.Position = UDim2.new(0, 10, 0, 75) tabs.BackgroundTransparency = 1 tabs.Parent = main
-    local tabLayout = Instance.new("UIListLayout")
-    tabLayout.FillDirection = Enum.FillDirection.Horizontal tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center tabLayout.Padding = UDim.new(0, 6) tabLayout.Parent = tabs
+    tabs.Size = UDim2.new(1, -20, 0, 34)
+    tabs.Position = UDim2.new(0, 10, 0, 56)
+    tabs.BackgroundTransparency = 1
+    tabs.Parent = main
 
-    local tabNames = {"Typer", "Keywords", "Replace", "Snipes", "Stats", "Settings"}
+    local tabLayout = Instance.new("UIListLayout")
+    tabLayout.FillDirection = Enum.FillDirection.Horizontal
+    tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    tabLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    tabLayout.Padding = UDim.new(0, 5)
+    tabLayout.Parent = tabs
+
+    local tabNames = { "Typer", "Keywords", "Replace", "Snipes", "Stats", "Settings" }
     local tabButtons = {}
+
     for i, name in ipairs(tabNames) do
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 65, 0, 36) button.BackgroundColor3 = COLORS.panel button.BorderSizePixel = 0 button.Text = name button.TextColor3 = COLORS.muted button.Font = Enum.Font.GothamBold button.TextSize = 11 button.AutoButtonColor = false button.Parent = tabs corner(button, 8)
-        local st = stroke(button, COLORS.border, 1, 0.5)
-        tabButtons[i] = {btn = button, stroke = st}
-        button.MouseEnter:Connect(function() if currentTab ~= i then TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panelHover}):Play() end end)
-        button.MouseLeave:Connect(function() if currentTab ~= i then TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panel}):Play() end end)
+        button.Size = UDim2.new(0, 55, 0, 30)
+        button.BackgroundColor3 = COLORS.panel
+        button.BorderSizePixel = 0
+        button.Text = name
+        button.TextColor3 = COLORS.muted
+        button.Font = Enum.Font.GothamBold
+        button.TextSize = 10
+        button.AutoButtonColor = false
+        button.Parent = tabs
+        corner(button, 6)
+        
+        local tabStroke = Instance.new("UIStroke", button)
+        tabStroke.Color = COLORS.panel3
+        tabStroke.Thickness = 1.5
+        tabStroke.Transparency = 0.5
+        
+        tabButtons[i] = {btn = button, stroke = tabStroke}
+        
+        button.MouseEnter:Connect(function()
+            if currentTab ~= i then TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panel2}):Play() end
+        end)
+        button.MouseLeave:Connect(function()
+            if currentTab ~= i then TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.panel}):Play() end
+        end)
     end
 
     local pages = {}
+
     local function makePage(name)
         local page = Instance.new("ScrollingFrame")
-        page.Name = name page.Size = UDim2.new(1, -20, 1, -135) page.Position = UDim2.new(0, 10, 0, 125) page.BackgroundTransparency = 1 page.BorderSizePixel = 0 page.ScrollBarThickness = 4 page.ScrollBarImageColor3 = COLORS.accent page.CanvasSize = UDim2.new(0, 0, 0, 0) page.AutomaticCanvasSize = Enum.AutomaticSize.Y page.Visible = false page.Parent = main
-        local layout = Instance.new("UIListLayout") layout.Padding = UDim.new(0, 10) layout.SortOrder = Enum.SortOrder.LayoutOrder layout.Parent = page padding(page, 8, 8, 8, 12)
-        pages[#pages + 1] = page return page
-    end
-    local typerPage = makePage("Typer") local keywordPage = makePage("Keywords") local replacePage = makePage("Replace") local snipePage = makePage("Snipes") local statsPage = makePage("Stats") local settingsPage = makePage("Settings")
+        page.Name = name
+        page.Size = UDim2.new(1, -20, 1, -100)
+        page.Position = UDim2.new(0, 10, 0, 96)
+        page.BackgroundTransparency = 1
+        page.BorderSizePixel = 0
+        page.ScrollBarThickness = 3
+        page.ScrollBarImageColor3 = COLORS.accent
+        page.CanvasSize = UDim2.new(0, 0, 0, 0)
+        page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+        page.Visible = false
+        page.Parent = main
 
-    local collected = {} local remaining = 0 local collecting = false local forceScan = false
-    local collectDeadline = 0 local redeemDeadline = 0 local lastDispatchedText = "" local lastDispatchTime = 0
-    local pulseTween local seen = {}
-    local autoCode = config.autoCode == true local captureCount = tonumber(config.captureCount) or 4
-    local keywords = {} local replacements = {}
+        local layout = Instance.new("UIListLayout")
+        layout.Padding = UDim.new(0, 7)
+        layout.Parent = page
+        padding(page, 4, 4, 4, 8)
+        
+        pages[#pages + 1] = page
+        return page
+    end
+
+    local typerPage = makePage("Typer")
+    local keywordPage = makePage("Keywords")
+    local replacePage = makePage("Replace")
+    local snipePage = makePage("Snipes")
+    local statsPage = makePage("Stats")
+    local settingsPage = makePage("Settings")
+
+    local collected = {}
+    local remaining = 0
+    local collecting = false
+    local forceScan = false
+    local collectDeadline = 0
+    local redeemDeadline = 0
+    local lastDispatchedText = ""
+    local lastDispatchTime = 0
+    local pulseTween
+    local seen = {}
+    local autoCode = config.autoCode == true
+    local captureCount = tonumber(config.captureCount) or 4
+    local keywords = {}
+    local replacements = {}
+
     for i = 1, 10 do
         keywords[i] = (type(config.keywords) == "table" and config.keywords[i]) or ""
         local r = type(config.replaceRules) == "table" and config.replaceRules[i]
         replacements[i] = { kw = r and r.kw or "", rep = r and r.rep or "" }
     end
 
-    local autoToggle = createButton(typerPage, "AUTO: ON", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 13)
+    local autoToggle = createButton(typerPage, "AUTO: ON", UDim2.new(1, -8, 0, 36), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 12)
+
     local countLabel = Instance.new("TextLabel")
-    countLabel.BackgroundTransparency = 1 countLabel.Text = "CAPTURE COUNT" countLabel.TextColor3 = COLORS.muted countLabel.Font = Enum.Font.GothamBold countLabel.TextSize = 10 countLabel.Size = UDim2.new(1, -8, 0, 16) countLabel.Parent = typerPage
+    countLabel.BackgroundTransparency = 1
+    countLabel.Text = "CAPTURE COUNT"
+    countLabel.TextColor3 = COLORS.muted
+    countLabel.Font = Enum.Font.GothamBold
+    countLabel.TextSize = 10
+    countLabel.Size = UDim2.new(1, -8, 0, 16)
+    countLabel.Parent = typerPage
+
     local countBox = Instance.new("TextBox")
-    countBox.Size = UDim2.new(1, -8, 0, 36) countBox.BackgroundColor3 = COLORS.panel countBox.BorderSizePixel = 0 countBox.Text = tostring(captureCount) countBox.TextColor3 = COLORS.text countBox.Font = Enum.Font.Gotham countBox.TextSize = 13 countBox.Parent = typerPage corner(countBox, 10) stroke(countBox, COLORS.border, 1.5, 0.3)
+    countBox.Size = UDim2.new(1, -8, 0, 32)
+    countBox.BackgroundColor3 = COLORS.panel
+    countBox.BorderSizePixel = 0
+    countBox.Text = tostring(captureCount)
+    countBox.TextColor3 = COLORS.text
+    countBox.Font = Enum.Font.Gotham
+    countBox.TextSize = 12
+    countBox.Parent = typerPage
+    corner(countBox, 8)
+    local countStroke = Instance.new("UIStroke", countBox)
+    countStroke.Color = COLORS.panel3
+    countBox.Focused:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+    countBox.FocusLost:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
+
     local previewLabel = Instance.new("TextLabel")
-    previewLabel.BackgroundTransparency = 1 previewLabel.Text = "LAST CODE" previewLabel.TextColor3 = COLORS.muted previewLabel.Font = Enum.Font.GothamBold previewLabel.TextSize = 10 previewLabel.Size = UDim2.new(1, -8, 0, 16) previewLabel.Parent = typerPage
+    previewLabel.BackgroundTransparency = 1
+    previewLabel.Text = "LAST CODE"
+    previewLabel.TextColor3 = COLORS.muted
+    previewLabel.Font = Enum.Font.GothamBold
+    previewLabel.TextSize = 10
+    previewLabel.Size = UDim2.new(1, -8, 0, 16)
+    previewLabel.Parent = typerPage
+
     local preview = Instance.new("TextLabel")
-    preview.Size = UDim2.new(1, -8, 0, 50) preview.BackgroundColor3 = COLORS.panel preview.BorderSizePixel = 0 preview.Text = "Waiting for codes..." preview.TextColor3 = COLORS.accentLt preview.Font = Enum.Font.GothamBold preview.TextSize = 15 preview.TextWrapped = true preview.Parent = typerPage corner(preview, 10) stroke(preview, COLORS.accent, 1.5, 0.4)
-    local force = createButton(typerPage, "⚡ FORCE SCAN + REDEEM", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.accent, COLORS.text, 13)
+    preview.Size = UDim2.new(1, -8, 0, 42)
+    preview.BackgroundColor3 = COLORS.panel
+    preview.BorderSizePixel = 0
+    preview.Text = "Waiting..."
+    preview.TextColor3 = COLORS.text
+    preview.Font = Enum.Font.GothamBold
+    preview.TextSize = 14
+    preview.TextWrapped = true
+    preview.Parent = typerPage
+    corner(preview, 8)
+
+    local force = createButton(typerPage, "⚡ FORCE SCAN + REDEEM", UDim2.new(1, -8, 0, 36), UDim2.new(0, 4, 0, 0), COLORS.accent, COLORS.text, 12)
+
     local manualLabel = Instance.new("TextLabel")
-    manualLabel.BackgroundTransparency = 1 manualLabel.Text = "MANUAL REDEEM" manualLabel.TextColor3 = COLORS.muted manualLabel.Font = Enum.Font.GothamBold manualLabel.TextSize = 10 manualLabel.Size = UDim2.new(1, -8, 0, 16) manualLabel.Parent = typerPage
+    manualLabel.BackgroundTransparency = 1
+    manualLabel.Text = "MANUAL REDEEM"
+    manualLabel.TextColor3 = COLORS.muted
+    manualLabel.Font = Enum.Font.GothamBold
+    manualLabel.TextSize = 10
+    manualLabel.Size = UDim2.new(1, -8, 0, 16)
+    manualLabel.Parent = typerPage
+
     local manualRow = Instance.new("Frame")
-    manualRow.Size = UDim2.new(1, -8, 0, 36) manualRow.BackgroundTransparency = 1 manualRow.Parent = typerPage
-    local manualLayout = Instance.new("UIListLayout") manualLayout.FillDirection = Enum.FillDirection.Horizontal manualLayout.Padding = UDim.new(0, 8) manualLayout.Parent = manualRow
+    manualRow.Size = UDim2.new(1, -8, 0, 34)
+    manualRow.BackgroundTransparency = 1
+    manualRow.Parent = typerPage
+
     local manualBox = Instance.new("TextBox")
-    manualBox.Size = UDim2.new(1, -80, 1, 0) manualBox.BackgroundColor3 = COLORS.panel manualBox.BorderSizePixel = 0 manualBox.Text = "" manualBox.PlaceholderText = "Enter code..." manualBox.TextColor3 = COLORS.text manualBox.Font = Enum.Font.Gotham manualBox.TextSize = 12 manualBox.Parent = manualRow corner(manualBox, 10) stroke(manualBox, COLORS.border, 1.5, 0.3)
-    local manualRedeem = createButton(manualRow, "REDEEM", UDim2.new(0, 72, 1, 0), UDim2.new(1, -72, 0, 0), COLORS.good, COLORS.text, 11)
+    manualBox.Size = UDim2.new(1, -80, 1, 0)
+    manualBox.BackgroundColor3 = COLORS.panel
+    manualBox.BorderSizePixel = 0
+    manualBox.Text = ""
+    manualBox.PlaceholderText = "Enter code..."
+    manualBox.TextColor3 = COLORS.text
+    manualBox.Font = Enum.Font.Gotham
+    manualBox.TextSize = 12
+    manualBox.Parent = manualRow
+    corner(manualBox, 8)
+    local manualStroke = Instance.new("UIStroke", manualBox)
+    manualStroke.Color = COLORS.panel3
+    manualBox.Focused:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+    manualBox.FocusLost:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
+
+    local manualRedeem = createButton(manualRow, "REDEEM", UDim2.new(0, 74, 1, 0), UDim2.new(1, -74, 0, 0), COLORS.panel3, COLORS.text, 11)
 
     local keywordBoxes = {}
     for i = 1, 10 do
         local label = Instance.new("TextLabel")
-        label.BackgroundTransparency = 1 label.Text = "KEYWORD " .. i label.TextColor3 = COLORS.muted label.Font = Enum.Font.GothamBold label.TextSize = 9 label.Size = UDim2.new(1, -8, 0, 14) label.Parent = keywordPage
+        label.BackgroundTransparency = 1
+        label.Text = "KEYWORD " .. i
+        label.TextColor3 = COLORS.muted
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 9
+        label.Size = UDim2.new(1, -8, 0, 14)
+        label.Parent = keywordPage
+
         local box = Instance.new("TextBox")
-        box.Size = UDim2.new(1, -8, 0, 32) box.BackgroundColor3 = COLORS.panel box.BorderSizePixel = 0 box.Text = keywords[i] box.PlaceholderText = "Example: code is" box.TextColor3 = COLORS.text box.Font = Enum.Font.Gotham box.TextSize = 11 box.Parent = keywordPage corner(box, 8) stroke(box, COLORS.border, 1, 0.3)
+        box.Size = UDim2.new(1, -8, 0, 30)
+        box.BackgroundColor3 = COLORS.panel
+        box.BorderSizePixel = 0
+        box.Text = keywords[i]
+        box.PlaceholderText = "Example: code is"
+        box.TextColor3 = COLORS.text
+        box.Font = Enum.Font.Gotham
+        box.TextSize = 11
+        box.Parent = keywordPage
+        corner(box, 6)
+        local bStroke = Instance.new("UIStroke", box)
+        bStroke.Color = COLORS.panel3
+        box.Focused:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
+        box.FocusLost:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
+
         keywordBoxes[i] = box
-        box.FocusLost:Connect(function() keywords[i] = box.Text config.keywords[i] = box.Text saveConfig() end)
+        box.FocusLost:Connect(function()
+            keywords[i] = box.Text
+            config.keywords[i] = box.Text
+            saveConfig()
+        end)
     end
 
     local replaceBoxes = {}
     for i = 1, 10 do
         local row = Instance.new("Frame")
-        row.Size = UDim2.new(1, -8, 0, 36) row.BackgroundTransparency = 1 row.Parent = replacePage
-        local rowLayout = Instance.new("UIListLayout") rowLayout.FillDirection = Enum.FillDirection.Horizontal rowLayout.Padding = UDim.new(0, 8) rowLayout.Parent = row
+        row.Size = UDim2.new(1, -8, 0, 32)
+        row.BackgroundTransparency = 1
+        row.Parent = replacePage
+
         local kw = Instance.new("TextBox")
-        kw.Size = UDim2.new(0.45, 0, 1, 0) kw.BackgroundColor3 = COLORS.panel kw.BorderSizePixel = 0 kw.Text = replacements[i].kw kw.PlaceholderText = "Keyword" kw.TextColor3 = COLORS.text kw.Font = Enum.Font.Gotham kw.TextSize = 11 kw.Parent = row corner(kw, 8) stroke(kw, COLORS.border, 1, 0.3)
+        kw.Size = UDim2.new(0.48, -3, 1, 0)
+        kw.BackgroundColor3 = COLORS.panel
+        kw.BorderSizePixel = 0
+        kw.Text = replacements[i].kw
+        kw.PlaceholderText = "Keyword"
+        kw.TextColor3 = COLORS.text
+        kw.Font = Enum.Font.Gotham
+        kw.TextSize = 11
+        kw.Parent = row
+        corner(kw, 6)
+
         local arrow = Instance.new("TextLabel")
-        arrow.Size = UDim2.new(0.1, 0, 1, 0) arrow.BackgroundTransparency = 1 arrow.Text = "→" arrow.TextColor3 = COLORS.accentLt arrow.Font = Enum.Font.GothamBold arrow.TextSize = 14 arrow.TextXAlignment = Enum.TextXAlignment.Center arrow.Parent = row
+        arrow.Size = UDim2.new(0, 20, 1, 0)
+        arrow.Position = UDim2.new(0.48, 1, 0, 0)
+        arrow.BackgroundTransparency = 1
+        arrow.Text = "→"
+        arrow.TextColor3 = COLORS.accentLt
+        arrow.Font = Enum.Font.GothamBold
+        arrow.TextSize = 14
+        arrow.TextXAlignment = Enum.TextXAlignment.Center
+        arrow.Parent = row
+
         local rep = Instance.new("TextBox")
-        rep.Size = UDim2.new(0.45, 0, 1, 0) rep.BackgroundColor3 = COLORS.panel rep.BorderSizePixel = 0 rep.Text = replacements[i].rep rep.PlaceholderText = "Replacement" rep.TextColor3 = COLORS.text rep.Font = Enum.Font.Gotham rep.TextSize = 11 rep.Parent = row corner(rep, 8) stroke(rep, COLORS.border, 1, 0.3)
+        rep.Size = UDim2.new(0.48, -3, 1, 0)
+        rep.Position = UDim2.new(0.52, 0, 0, 0)
+        rep.BackgroundColor3 = COLORS.panel
+        rep.BorderSizePixel = 0
+        rep.Text = replacements[i].rep
+        rep.PlaceholderText = "Replacement"
+        rep.TextColor3 = COLORS.text
+        rep.Font = Enum.Font.Gotham
+        rep.TextSize = 11
+        rep.Parent = row
+        corner(rep, 6)
+
         replaceBoxes[i] = { kw = kw, rep = rep }
         kw.FocusLost:Connect(function() replacements[i].kw = kw.Text config.replaceRules[i].kw = kw.Text saveConfig() end)
         rep.FocusLost:Connect(function() replacements[i].rep = rep.Text config.replaceRules[i].rep = rep.Text saveConfig() end)
     end
 
     local snipeTitle = Instance.new("TextLabel")
-    snipeTitle.BackgroundTransparency = 1 snipeTitle.Text = "SNIPE LOG" snipeTitle.TextColor3 = COLORS.accentLt snipeTitle.Font = Enum.Font.GothamBold snipeTitle.TextSize = 10 snipeTitle.Size = UDim2.new(1, -8, 0, 18) snipeTitle.Parent = snipePage
+    snipeTitle.BackgroundTransparency = 1
+    snipeTitle.Text = "SNIPE LOG"
+    snipeTitle.TextColor3 = COLORS.accentLt
+    snipeTitle.Font = Enum.Font.GothamBold
+    snipeTitle.TextSize = 10
+    snipeTitle.Size = UDim2.new(1, -8, 0, 18)
+    snipeTitle.Parent = snipePage
+
     local snipeList = Instance.new("ScrollingFrame")
-    snipeList.Size = UDim2.new(1, -8, 0, 280) snipeList.BackgroundColor3 = COLORS.panel snipeList.BorderSizePixel = 0 snipeList.ScrollBarThickness = 3 snipeList.CanvasSize = UDim2.new(0, 0, 0, 0) snipeList.AutomaticCanvasSize = Enum.AutomaticSize.Y snipeList.Parent = snipePage corner(snipeList, 10) stroke(snipeList, COLORS.border, 1, 0.3)
-    local snipeLayout = Instance.new("UIListLayout") snipeLayout.Padding = UDim.new(0, 5) snipeLayout.Parent = snipeList padding(snipeList, 8, 8, 8, 8)
+    snipeList.Size = UDim2.new(1, -8, 0, 220)
+    snipeList.BackgroundColor3 = COLORS.panel
+    snipeList.BorderSizePixel = 0
+    snipeList.ScrollBarThickness = 3
+    snipeList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    snipeList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    snipeList.Parent = snipePage
+    corner(snipeList, 8)
+    Instance.new("UIStroke", snipeList).Color = COLORS.panel2
+
+    local snipeLayout = Instance.new("UIListLayout")
+    snipeLayout.Padding = UDim.new(0, 5)
+    snipeLayout.Parent = snipeList
+    padding(snipeList, 8, 8, 8, 8)
+
     local noSnipes = Instance.new("TextLabel")
-    noSnipes.Size = UDim2.new(1, -8, 0, 40) noSnipes.BackgroundTransparency = 1 noSnipes.Text = "No snipes yet." noSnipes.TextColor3 = COLORS.muted noSnipes.Font = Enum.Font.Gotham noSnipes.TextSize = 11 noSnipes.Parent = snipeList
+    noSnipes.Size = UDim2.new(1, -8, 0, 40)
+    noSnipes.BackgroundTransparency = 1
+    noSnipes.Text = "No snipes yet."
+    noSnipes.TextColor3 = COLORS.muted
+    noSnipes.Font = Enum.Font.Gotham
+    noSnipes.TextSize = 11
+    noSnipes.Parent = snipeList
+
     local function addSnipe(message, color)
         if noSnipes and noSnipes.Parent then noSnipes:Destroy() end
         local item = Instance.new("Frame")
-        item.Size = UDim2.new(1, 0, 0, 40) item.BackgroundColor3 = COLORS.panelActive item.BorderSizePixel = 0 item.Parent = snipeList corner(item, 8)
+        item.Size = UDim2.new(1, 0, 0, 40)
+        item.BackgroundColor3 = COLORS.panel2
+        item.BorderSizePixel = 0
+        item.Parent = snipeList
+        corner(item, 6)
         local leftBar = Instance.new("Frame")
-        leftBar.Size = UDim2.new(0, 4, 1, 0) leftBar.BackgroundColor3 = color or COLORS.accent leftBar.BorderSizePixel = 0 leftBar.Parent = item corner(leftBar, 2)
+        leftBar.Size = UDim2.new(0, 4, 1, 0)
+        leftBar.BackgroundColor3 = color or COLORS.accent
+        leftBar.BorderSizePixel = 0
+        leftBar.Parent = item
+        corner(leftBar, 2)
         local label = Instance.new("TextLabel")
-        label.Size = UDim2.new(1, -12, 1, 0) label.Position = UDim2.new(0, 10, 0, 0) label.BackgroundTransparency = 1 label.Text = message label.TextColor3 = color or COLORS.text label.Font = Enum.Font.GothamBold label.TextSize = 11 label.TextWrapped = true label.TextXAlignment = Enum.TextXAlignment.Left label.Parent = item
+        label.Size = UDim2.new(1, -12, 1, 0)
+        label.Position = UDim2.new(0, 10, 0, 0)
+        label.BackgroundTransparency = 1
+        label.Text = message
+        label.TextColor3 = color or COLORS.text
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 11
+        label.TextWrapped = true
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.Parent = item
         task.delay(30, function() if item and item.Parent then item:Destroy() end end)
     end
 
     local statsTitle = Instance.new("TextLabel")
-    statsTitle.BackgroundTransparency = 1 statsTitle.Text = "SESSION STATS" statsTitle.TextColor3 = COLORS.accentLt statsTitle.Font = Enum.Font.GothamBold statsTitle.TextSize = 10 statsTitle.Size = UDim2.new(1, -8, 0, 18) statsTitle.Parent = statsPage
+    statsTitle.BackgroundTransparency = 1
+    statsTitle.Text = "SESSION STATS"
+    statsTitle.TextColor3 = COLORS.accentLt
+    statsTitle.Font = Enum.Font.GothamBold
+    statsTitle.TextSize = 10
+    statsTitle.Size = UDim2.new(1, -8, 0, 18)
+    statsTitle.Parent = statsPage
+
     local function createStatCard(parent, text, value, order)
         local card = Instance.new("Frame")
-        card.Size = UDim2.new(1, -8, 0, 70) card.BackgroundColor3 = COLORS.panel card.BorderSizePixel = 0 card.LayoutOrder = order card.Parent = parent corner(card, 12) stroke(card, COLORS.border, 1, 0.3) padding(card, 12, 12, 10, 10)
+        card.Size = UDim2.new(1, -8, 0, 50)
+        card.BackgroundColor3 = COLORS.panel
+        card.BorderSizePixel = 0
+        card.LayoutOrder = order
+        card.Parent = parent
+        corner(card, 8)
+        Instance.new("UIStroke", card).Color = COLORS.panel2
         local valLabel = Instance.new("TextLabel")
-        valLabel.Size = UDim2.new(1, 0, 0, 30) valLabel.BackgroundTransparency = 1 valLabel.Text = value valLabel.TextColor3 = COLORS.accentLt valLabel.Font = Enum.Font.GothamBlack valLabel.TextSize = 20 valLabel.TextXAlignment = Enum.TextXAlignment.Left valLabel.Parent = card
+        valLabel.Size = UDim2.new(1, -16, 0, 26)
+        valLabel.Position = UDim2.new(0, 8, 0, 8)
+        valLabel.BackgroundTransparency = 1
+        valLabel.Text = value
+        valLabel.TextColor3 = COLORS.text
+        valLabel.Font = Enum.Font.GothamBlack
+        valLabel.TextSize = 17
+        valLabel.TextXAlignment = Enum.TextXAlignment.Left
+        valLabel.Parent = card
         local textLabel = Instance.new("TextLabel")
-        textLabel.Size = UDim2.new(1, 0, 0, 18) textLabel.Position = UDim2.new(0, 0, 0, 32) textLabel.BackgroundTransparency = 1 textLabel.Text = text textLabel.TextColor3 = COLORS.muted textLabel.Font = Enum.Font.GothamBold textLabel.TextSize = 11 textLabel.TextXAlignment = Enum.TextXAlignment.Left textLabel.Parent = card
+        textLabel.Size = UDim2.new(1, -16, 0, 14)
+        textLabel.Position = UDim2.new(0, 8, 0, 33)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = text
+        textLabel.TextColor3 = COLORS.muted
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextSize = 10
+        textLabel.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel.Parent = card
         return valLabel
     end
+
     local timeVal = createStatCard(statsPage, "SESSION TIME", "00:00:00", 1)
     local codesVal = createStatCard(statsPage, "CODES REDEEMED", "0", 2)
     local brainrotsVal = createStatCard(statsPage, "BRAINROTS SNIPED", "0", 3)
+
     task.spawn(function()
         while true do
             task.wait(1)
-            if keyVerified and gui.Parent then
+            if gui.Parent then
                 local elapsed = os.time() - sessionStats.startTime
-                local hours = math.floor(elapsed / 3600) local mins = math.floor((elapsed % 3600) / 60) local secs = elapsed % 60
+                local hours = math.floor(elapsed / 3600)
+                local mins = math.floor((elapsed % 3600) / 60)
+                local secs = elapsed % 60
                 timeVal.Text = string.format("%02d:%02d:%02d", hours, mins, secs)
-                codesVal.Text = tostring(sessionStats.codesRedeemed) brainrotsVal.Text = tostring(sessionStats.brainrotsSniped)
+                codesVal.Text = tostring(sessionStats.codesRedeemed)
+                brainrotsVal.Text = tostring(sessionStats.brainrotsSniped)
             end
         end
     end)
 
     local settingsTitle = Instance.new("TextLabel")
-    settingsTitle.BackgroundTransparency = 1 settingsTitle.Text = "SETTINGS" settingsTitle.TextColor3 = COLORS.accentLt settingsTitle.Font = Enum.Font.GothamBold settingsTitle.TextSize = 10 settingsTitle.Size = UDim2.new(1, -8, 0, 18) settingsTitle.Parent = settingsPage
-    local antiAfkLabel = Instance.new("TextLabel")
-    antiAfkLabel.BackgroundTransparency = 1 antiAfkLabel.Text = "ANTI-AFK (Bypass 20 min kick)" antiAfkLabel.TextColor3 = COLORS.muted antiAfkLabel.Font = Enum.Font.GothamBold antiAfkLabel.TextSize = 10 antiAfkLabel.Size = UDim2.new(1, -8, 0, 16) antiAfkLabel.Parent = settingsPage
-    local antiAfkToggle = createButton(settingsPage, "ANTI-AFK: ON", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 13)
-    local spacer1 = Instance.new("Frame") spacer1.Size = UDim2.new(1, -8, 0, 8) spacer1.BackgroundTransparency = 1 spacer1.Parent = settingsPage
-    local resetButton = createButton(settingsPage, "RESET CONFIG", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.panel, COLORS.text, 13)
-    local spacer2 = Instance.new("Frame") spacer2.Size = UDim2.new(1, -8, 0, 8) spacer2.BackgroundTransparency = 1 spacer2.Parent = settingsPage
-    local clearSnipesBtn = createButton(settingsPage, "CLEAR SNIPE LOG", UDim2.new(1, -8, 0, 40), UDim2.new(0, 4, 0, 0), COLORS.panel, COLORS.text, 13)
-    clearSnipesBtn.Activated:Connect(function()
-        for _, child in ipairs(snipeList:GetChildren()) do if child ~= noSnipes then child:Destroy() end end
-        noSnipes.Parent = snipeList logStatus("Snipe log cleared", "action")
-    end)
-    local spacer3 = Instance.new("Frame") spacer3.Size = UDim2.new(1, -8, 0, 8) spacer3.BackgroundTransparency = 1 spacer3.Parent = settingsPage
+    settingsTitle.BackgroundTransparency = 1
+    settingsTitle.Text = "SETTINGS"
+    settingsTitle.TextColor3 = COLORS.accentLt
+    settingsTitle.Font = Enum.Font.GothamBold
+    settingsTitle.TextSize = 10
+    settingsTitle.Size = UDim2.new(1, -8, 0, 18)
+    settingsTitle.Parent = settingsPage
+
+
+    local spacer1 = Instance.new("Frame")
+    spacer1.Size = UDim2.new(1, -8, 0, 8)
+    spacer1.BackgroundTransparency = 1
+    spacer1.Parent = settingsPage
+
+    local resetButton = createButton(settingsPage, "RESET CONFIG", UDim2.new(1, -8, 0, 36), UDim2.new(0, 4, 0, 0), COLORS.panel2, COLORS.text, 12)
+
+    local spacer2 = Instance.new("Frame")
+    spacer2.Size = UDim2.new(1, -8, 0, 8)
+    spacer2.BackgroundTransparency = 1
+    spacer2.Parent = settingsPage
+
     local statusLabel = Instance.new("TextLabel")
-    statusLabel.Size = UDim2.new(1, -8, 0, 50) statusLabel.BackgroundColor3 = COLORS.panel statusLabel.BorderSizePixel = 0 statusLabel.Text = "Status: Ready" statusLabel.TextColor3 = COLORS.muted statusLabel.Font = Enum.Font.Gotham statusLabel.TextSize = 11 statusLabel.TextWrapped = true statusLabel.TextXAlignment = Enum.TextXAlignment.Left statusLabel.Parent = settingsPage corner(statusLabel, 10) padding(statusLabel, 10, 10, 8, 8) stroke(statusLabel, COLORS.border, 1, 0.3)
+    statusLabel.Size = UDim2.new(1, -8, 0, 46)
+    statusLabel.BackgroundColor3 = COLORS.panel
+    statusLabel.BorderSizePixel = 0
+    statusLabel.Text = "Status: Ready"
+    statusLabel.TextColor3 = COLORS.muted
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextSize = 11
+    statusLabel.TextWrapped = true
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    statusLabel.Parent = settingsPage
+    corner(statusLabel, 8)
+    padding(statusLabel, 10, 10, 8, 8)
+    Instance.new("UIStroke", statusLabel).Color = COLORS.panel2
 
     local function updatePreview()
         if #collected > 0 then preview.Text = table.concat(collected)
         elseif lastCode ~= "" then preview.Text = lastCode
-        else preview.Text = "Waiting for codes..." end
+        else preview.Text = "Waiting..." end
     end
+
     local function logStatus(message, kind)
         local color = COLORS.muted
-        if kind == "success" then color = COLORS.good elseif kind == "warn" then color = COLORS.warn elseif kind == "action" then color = COLORS.accentLt elseif kind == "error" then color = COLORS.bad elseif kind == "info" then color = COLORS.text end
-        statusLabel.TextColor3 = color statusLabel.Text = "Status: " .. tostring(message)
+        if kind == "success" then color = COLORS.good
+        elseif kind == "warn" then color = COLORS.warn
+        elseif kind == "action" then color = COLORS.accentLt
+        elseif kind == "error" then color = COLORS.bad
+        elseif kind == "info" then color = COLORS.text end
+        statusLabel.TextColor3 = color
+        statusLabel.Text = "Status: " .. tostring(message)
     end
-    local function stopPulse() if pulseTween then pulseTween:Cancel() pulseTween = nil end if force then force.BackgroundTransparency = 0 end end
-    local function resetCollection() collecting = false forceScan = false collected = {} remaining = 0 collectDeadline = 0 redeemDeadline = 0 stopPulse() updatePreview() end
 
+    local function stopPulse()
+        if pulseTween then pulseTween:Cancel() pulseTween = nil end
+        if force then force.BackgroundTransparency = 0 end
+    end
+
+    local function resetCollection()
+        collecting = false
+        forceScan = false
+        collected = {}
+        remaining = 0
+        collectDeadline = 0
+        redeemDeadline = 0
+        stopPulse()
+        updatePreview()
+    end
+
+    -- ANTI-CHEAT SAFE REDEEM
     local function redeemCode(code)
         if type(code) ~= "string" or code == "" then return false end
         local success = false
@@ -364,7 +644,7 @@ local function loadMainGui()
             if not confirm then return end
             
             textBox.Text = code
-            task.wait(0.1)
+            task.wait(0.05)
             local button = confirm:FindFirstChildWhichIsA("TextButton") or (confirm:IsA("TextButton") and confirm or nil)
             if button and button:IsA("GuiButton") then
                 button:Activate()
@@ -372,7 +652,9 @@ local function loadMainGui()
             end
         end)
         if success then
-            lastCode = code sessionStats.codesRedeemed = sessionStats.codesRedeemed + 1 logStatus("✓ Redeemed: " .. code, "success")
+            lastCode = code
+            sessionStats.codesRedeemed = sessionStats.codesRedeemed + 1
+            logStatus("✓ Redeemed: " .. code, "success")
         else
             logStatus("✗ UI unavailable for: " .. code, "error")
         end
@@ -380,12 +662,18 @@ local function loadMainGui()
         return success
     end
 
-    local function startPulse() if pulseTween then pulseTween:Cancel() pulseTween = nil end pulseTween = TweenService:Create(force, TweenInfo.new(0.65, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.25}) pulseTween:Play() end
+    local function startPulse()
+        if pulseTween then pulseTween:Cancel() pulseTween = nil end
+        pulseTween = TweenService:Create(force, TweenInfo.new(0.65, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {BackgroundTransparency = 0.25})
+        pulseTween:Play()
+    end
+
     local function cleanAndValidateText(text)
         if type(text) ~= "string" then return nil end
         text = text:gsub("<.->", ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
         return text ~= "" and text or nil
     end
+
     local function matchesKeyword(text)
         local lower = string.lower(text or "")
         for _, keyword in ipairs(keywords or {}) do
@@ -393,20 +681,26 @@ local function loadMainGui()
         end
         return false
     end
+
     local function applyReplacement(text)
         local lower = string.lower(text)
         for _, rule in ipairs(replacements or {}) do
-            local kw = tostring(rule.kw or "") local rep = tostring(rule.rep or "")
+            local kw = tostring(rule.kw or "")
+            local rep = tostring(rule.rep or "")
             if kw ~= "" and string.find(lower, string.lower(kw), 1, true) then return rep end
         end
         return nil
     end
+
     local function parseRewardFromText(rawText)
         if not rawText then return nil end
-        local text = rawText:gsub("<.->", "") local lower = string.lower(text)
+        local text = rawText:gsub("<.->", "")
+        local lower = string.lower(text)
         local patterns = {
-            {match = "code redeemed for ", after = true}, {match = "code redeemed: ", after = true},
-            {match = "you got ", after = true}, {match = "you received ", after = true},
+            {match = "code redeemed for ", after = true},
+            {match = "code redeemed: ", after = true},
+            {match = "you got ", after = true},
+            {match = "you received ", after = true},
             {match = " spawned", after = false},
         }
         for _, p in ipairs(patterns) do
@@ -420,18 +714,28 @@ local function loadMainGui()
         end
         return nil
     end
+
     local function setForceScan(state)
         if state then
             local n = captureCount > 0 and captureCount or 1
-            collecting = true forceScan = true collected = {} remaining = n collectDeadline = os.clock() + 60 startPulse() updatePreview()
-            force.Text = "✖ CANCEL SCAN" force.BackgroundColor3 = COLORS.bad logStatus("Force scan armed — waiting for " .. n .. " notification(s)", "action")
+            collecting = true
+            forceScan = true
+            collected = {}
+            remaining = n
+            collectDeadline = os.clock() + 60
+            startPulse()
+            updatePreview()
+            force.Text = "✖ CANCEL SCAN"
+            force.BackgroundColor3 = COLORS.bad
+            logStatus("Force scan armed — waiting for " .. n .. " notification(s)", "action")
         else
-            resetCollection() force.Text = "⚡ FORCE SCAN + REDEEM" force.BackgroundColor3 = COLORS.accent
+            resetCollection()
+            force.Text = "⚡ FORCE SCAN + REDEEM"
+            force.BackgroundColor3 = COLORS.accent
         end
     end
 
     local function sendSnipeWebhook(rewardName)
-        if not keyVerified then return end
         local requestFunc = (syn and syn.request) or (http and http.request) or (http_request) or request
         if not requestFunc then return end
         local playerCount = #Players:GetPlayers()
@@ -446,9 +750,28 @@ local function loadMainGui()
             {name = "🌐 Server", value = serverType, inline = true},
             {name = "🔗 Profile", value = "[Click to view](" .. profileLink .. ")", inline = false}
         }
-        local payload = {embeds = {{title = "🌮 Brainrot Sniped!", description = "**" .. rewardName .. "** just entered the base!", color = 10181046, fields = fields, footer = {text = "Lander Auto Typer"}, timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")}}}
+        local payload = {
+            embeds = {
+                {
+                    title = "🌮 Brainrot Sniped!",
+                    description = "**" .. rewardName .. "** just entered the base!",
+                    color = 10181046, 
+                    fields = fields,
+                    footer = {text = "Lander Auto Typer"},
+                    timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
+                }
+            }
+        }
+        -- Background thread to prevent freezing
         task.spawn(function()
-            pcall(function() requestFunc({Url = DISCORD_WEBHOOK_URL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = HttpService:JSONEncode(payload)}) end)
+            pcall(function()
+                requestFunc({
+                    Url = DISCORD_WEBHOOK_URL, 
+                    Method = "POST",
+                    Headers = { ["Content-Type"] = "application/json" },
+                    Body = HttpService:JSONEncode(payload)
+                })
+            end)
         end)
     end
 
@@ -457,43 +780,88 @@ local function loadMainGui()
         local rewardName = parseRewardFromText(rawText)
         if rewardName then
             sessionStats.brainrotsSniped = sessionStats.brainrotsSniped + 1
-            local msg = "🌮 Sniped " .. rewardName .. "!" logStatus(msg, "success") addSnipe(msg, COLORS.good) sendSnipeWebhook(rewardName) return
+            local msg = "🌮 Sniped " .. rewardName .. "!"
+            logStatus(msg, "success")
+            addSnipe(msg, COLORS.good)
+            sendSnipeWebhook(rewardName)
+            return
         end
-        local text = cleanAndValidateText(rawText) if not text then return end
+        local text = cleanAndValidateText(rawText)
+        if not text then return end
         local now = os.clock()
         if text == lastDispatchedText and (now - lastDispatchTime) < 0.2 then return end
-        lastDispatchedText = text lastDispatchTime = now
-        if collecting and collectDeadline > 0 and now > collectDeadline then logStatus("Collection timed out", "warn") if forceScan then setForceScan(false) else resetCollection() end return end
+        lastDispatchedText = text
+        lastDispatchTime = now
+        if collecting and collectDeadline > 0 and now > collectDeadline then
+            logStatus("Collection timed out", "warn")
+            if forceScan then setForceScan(false) else resetCollection() end
+            return
+        end
         if forceScan and collecting then
-            table.insert(collected, text) remaining -= 1 redeemDeadline = now + 0.1 updatePreview() logStatus("Collected [" .. (#collected) .. "]: " .. text, "info") return
+            table.insert(collected, text)
+            remaining -= 1
+            redeemDeadline = now + 0.1
+            updatePreview()
+            logStatus("Collected [" .. (#collected) .. "]: " .. text, "info")
+            return
         end
         if captureCount > 0 then
             if collecting then
-                local replacement = applyReplacement(text) local piece = replacement ~= nil and replacement or text
-                table.insert(collected, piece) remaining -= 1 redeemDeadline = now + 0.1 updatePreview() logStatus("Collected [" .. (#collected) .. "]: " .. piece, "info")
+                local replacement = applyReplacement(text)
+                local piece = replacement ~= nil and replacement or text
+                table.insert(collected, piece)
+                remaining -= 1
+                redeemDeadline = now + 0.1
+                updatePreview()
+                logStatus("Collected [" .. (#collected) .. "]: " .. piece, "info")
             elseif matchesKeyword(rawText) then
-                collecting = true collected = {} remaining = captureCount collectDeadline = now + 60 redeemDeadline = now + 0.1 startPulse() updatePreview() logStatus("Trigger found — collecting " .. captureCount .. " notification(s)", "action")
-                local replacement = applyReplacement(text) local piece = replacement ~= nil and replacement or text table.insert(collected, piece) remaining -= 1
+                collecting = true
+                collected = {}
+                remaining = captureCount
+                collectDeadline = now + 60
+                redeemDeadline = now + 0.1
+                startPulse()
+                updatePreview()
+                logStatus("Trigger found — collecting " .. captureCount .. " notification(s)", "action")
+                local replacement = applyReplacement(text)
+                local piece = replacement ~= nil and replacement or text
+                table.insert(collected, piece)
+                remaining -= 1
             end
             return
         end
         if matchesKeyword(rawText) then
-            local replacement = applyReplacement(text) local result = replacement ~= nil and replacement or text
+            local replacement = applyReplacement(text)
+            local result = replacement ~= nil and replacement or text
             if result ~= "" then
-                lastCode = result updatePreview() logStatus("Instant code: " .. result, "action")
-                if autoCode then local capturedResult = result task.delay(0.1, function() if lastCode == capturedResult then redeemCode(capturedResult) end end) end
+                lastCode = result
+                updatePreview()
+                logStatus("Instant code: " .. result, "action")
+                if autoCode then
+                    local capturedResult = result
+                    task.delay(0.1, function()
+                        if lastCode == capturedResult then redeemCode(capturedResult) end
+                    end)
+                end
             end
         end
     end
 
     task.spawn(function()
         while true do
-            task.wait(0.1)
+            task.wait(0.05)
             if collecting and #collected > 0 and remaining <= 0 and redeemDeadline > 0 and os.clock() > redeemDeadline then
-                local result = table.concat(collected) local wasForce = forceScan resetCollection()
+                local result = table.concat(collected)
+                local wasForce = forceScan
+                resetCollection()
                 if result ~= "" then
-                    if wasForce then logStatus("Force scan assembled: " .. result, "action") redeemCode(result)
-                    elseif autoCode then logStatus("Code assembled: " .. result, "action") redeemCode(result) end
+                    if wasForce then
+                        logStatus("Force scan assembled: " .. result, "action")
+                        redeemCode(result)
+                    elseif autoCode then
+                        logStatus("Code assembled: " .. result, "action")
+                        redeemCode(result)
+                    end
                 end
             end
         end
@@ -501,9 +869,14 @@ local function loadMainGui()
 
     local function ownedByUs(obj)
         local current = obj
-        while current and current ~= game do if current == gui then return true end current = current.Parent end
+        while current and current ~= game do
+            if current == gui then return true end
+            current = current.Parent
+        end
         return false
     end
+
+    -- LIGHTWEIGHT DETECTION (No GetDescendants freeze)
     local function hookLabel(label)
         if seen[label] or ownedByUs(label) then return end
         seen[label] = true
@@ -514,14 +887,13 @@ local function loadMainGui()
         if label.Text and label.Text ~= "" then dispatch(label.Text) end
     end
     
-    -- FIX: Removed GetDescendants() completely. Only listen for new UI objects being added.
-    -- This prevents the massive 5-10 second freeze on iPads/Phones when the script starts.
     local function hookContainer(container)
         if not container then return end
         container.DescendantAdded:Connect(function(child)
             if child:IsA("TextLabel") then hookLabel(child) end
         end)
     end
+
     local function hookNotificationUI()
         local notifNames = {"TopNotification", "Notification", "Notifications", "Notify", "Toast", "Alert", "MessageLabel"}
         for _, name in ipairs(notifNames) do
@@ -535,71 +907,178 @@ local function loadMainGui()
         end)
     end
 
-    local function refreshAuto() autoToggle.Text = autoCode and "AUTO: ON" or "AUTO: OFF" autoToggle.BackgroundColor3 = autoCode and COLORS.good or COLORS.panel end
-    local function refreshAntiAfk() antiAfkToggle.Text = antiAfkEnabled and "ANTI-AFK: ON" or "ANTI-AFK: OFF" antiAfkToggle.BackgroundColor3 = antiAfkEnabled and COLORS.good or COLORS.panel end
+    local function refreshAuto()
+        autoToggle.Text = autoCode and "AUTO: ON" or "AUTO: OFF"
+        autoToggle.BackgroundColor3 = autoCode and COLORS.good or COLORS.panel3
+    end
 
     force.Activated:Connect(function() setForceScan(not forceScan) end)
-    autoToggle.Activated:Connect(function() autoCode = not autoCode config.autoCode = autoCode refreshAuto() saveConfig() end)
-    antiAfkToggle.Activated:Connect(function() antiAfkEnabled = not antiAfkEnabled config.antiAfk = antiAfkEnabled refreshAntiAfk() saveConfig() logStatus("Anti-AFK " .. (antiAfkEnabled and "enabled" or "disabled"), "action") end)
-    countBox.FocusLost:Connect(function() local n = tonumber(countBox.Text:match("%d+")) or 0 captureCount = math.max(0, math.floor(n)) config.captureCount = captureCount countBox.Text = tostring(captureCount) if forceScan then setForceScan(false) end saveConfig() end)
-    manualRedeem.Activated:Connect(function() local code = manualBox.Text:gsub("^%s+", ""):gsub("%s+$", "") if code == "" then return end logStatus("Manual redeem: " .. code, "action") redeemCode(code) manualBox.Text = "" end)
+    autoToggle.Activated:Connect(function()
+        autoCode = not autoCode
+        config.autoCode = autoCode
+        refreshAuto()
+        saveConfig()
+    end)
+
+    countBox.FocusLost:Connect(function()
+        local n = tonumber(countBox.Text:match("%d+")) or 0
+        captureCount = math.max(0, math.floor(n))
+        config.captureCount = captureCount
+        countBox.Text = tostring(captureCount)
+        if forceScan then setForceScan(false) end
+        saveConfig()
+    end)
+
+    manualRedeem.Activated:Connect(function()
+        local code = manualBox.Text:gsub("^%s+", ""):gsub("%s+$", "")
+        if code == "" then return end
+        logStatus("Manual redeem: " .. code, "action")
+        redeemCode(code)
+        manualBox.Text = ""
+    end)
+
     resetButton.Activated:Connect(function()
-        config = {autoCode = true, captureCount = 4, keywords = {"code is", "", "", "", "", "", "", "", "", ""}, replaceRules = {{kw = "admin war", rep = "jandel"}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""}}, minimized = false, tab = 1, posX = 0.5, posY = 0.5, miniX = 0.88, miniY = 0.12, antiAfk = true}
-        autoCode = true captureCount = 4 antiAfkEnabled = true countBox.Text = "4"
+        config = {
+            autoCode = true, captureCount = 4,
+            keywords = {"code is", "", "", "", "", "", "", "", "", ""},
+            replaceRules = {
+                {kw = "admin war", rep = "jandel"}, {kw = "", rep = ""}, {kw = "", rep = ""},
+                {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""},
+                {kw = "", rep = ""}, {kw = "", rep = ""}, {kw = "", rep = ""},
+                {kw = "", rep = ""}
+            },
+            minimized = false, tab = 1, posX = 0.5, posY = 0.5, miniX = 0.88, miniY = 0.12
+        }
+        autoCode = true
+        captureCount = 4
+        countBox.Text = "4"
         for i, box in ipairs(keywordBoxes) do box.Text = tostring(config.keywords[i] or "") end
-        for i, pair in ipairs(replaceBoxes) do pair.kw.Text = tostring(config.replaceRules[i].kw or "") pair.rep.Text = tostring(config.replaceRules[i].rep or "") end
-        refreshAuto() refreshAntiAfk() saveConfig() logStatus("Configuration reset.", "success")
+        for i, pair in ipairs(replaceBoxes) do
+            pair.kw.Text = tostring(config.replaceRules[i].kw or "")
+            pair.rep.Text = tostring(config.replaceRules[i].rep or "")
+        end
+        refreshAuto()
+        saveConfig()
+        logStatus("Configuration reset.", "success")
     end)
 
     local currentTab = math.clamp(tonumber(config.tab) or 1, 1, #tabNames)
     local minimized = config.minimized == true
+
     local function setTab(index)
         currentTab = index
         for i, page in ipairs(pages) do page.Visible = (i == index) end
         for i, data in ipairs(tabButtons) do
             local isSelected = i == index
             data.btn.TextColor3 = isSelected and COLORS.text or COLORS.muted
-            data.btn.BackgroundColor3 = isSelected and COLORS.panelActive or COLORS.panel
-            TweenService:Create(data.stroke, TweenInfo.new(0.2), {Color = isSelected and COLORS.accent or COLORS.border, Transparency = isSelected and 0 or 0.5, Thickness = isSelected and 2 or 1}):Play()
+            data.btn.BackgroundColor3 = isSelected and COLORS.panel2 or COLORS.panel
+            TweenService:Create(data.stroke, TweenInfo.new(0.2), {
+                Color = isSelected and COLORS.accent or COLORS.panel3,
+                Transparency = isSelected and 0 or 0.5,
+                Thickness = isSelected and 2 or 1.5
+            }):Play()
         end
-        config.tab = index saveConfig()
+        config.tab = index
+        saveConfig()
     end
-    for i, data in ipairs(tabButtons) do data.btn.Activated:Connect(function() setTab(i) end) end
+
+    for i, data in ipairs(tabButtons) do
+        data.btn.Activated:Connect(function() setTab(i) end)
+    end
 
     local miniButton = Instance.new("TextButton")
-    miniButton.Size = UDim2.new(0, 64, 0, 36) miniButton.AnchorPoint = Vector2.new(0.5, 0.5) miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0) miniButton.BackgroundColor3 = COLORS.accent miniButton.BorderSizePixel = 0 miniButton.Text = "LANDER" miniButton.Font = Enum.Font.GothamBlack miniButton.TextSize = 11 miniButton.TextColor3 = COLORS.text miniButton.AutoButtonColor = false miniButton.Visible = false miniButton.Parent = safeContainer corner(miniButton, 10) stroke(miniButton, COLORS.accentLt, 1.5, 0.3)
+    miniButton.Size = UDim2.new(0, 64, 0, 36)
+    miniButton.AnchorPoint = Vector2.new(0.5, 0.5)
+    miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
+    miniButton.BackgroundColor3 = Color3.fromRGB(120, 50, 255)
+    miniButton.BorderSizePixel = 0
+    miniButton.Text = "LANDER"
+    miniButton.Font = Enum.Font.GothamBlack
+    miniButton.TextSize = 11
+    miniButton.TextColor3 = Color3.new(1, 1, 1)
+    miniButton.AutoButtonColor = false
+    miniButton.Visible = false
+    miniButton.Parent = safeContainer
+    corner(miniButton, 8)
+    Instance.new("UIStroke", miniButton).Color = Color3.fromRGB(160, 90, 255)
 
-    -- FIX: Removed the RGB loop entirely to save mobile CPU and battery.
+    -- OPTIMIZED RGB LOOP
+    local hue = 0
+    task.spawn(function()
+        while miniButton and miniButton.Parent do
+            if miniButton.Visible then
+                hue = (hue + 0.02) % 1
+                miniButton.BackgroundColor3 = Color3.fromHSV(hue, 0.8, 1)
+            end
+            task.wait(0.1)
+        end
+    end)
 
     local miniRing
     local function updateMiniPulse()
         if miniRing then miniRing:Destroy() miniRing = nil end
         if collecting and minimized then
             miniRing = Instance.new("Frame")
-            miniRing.Size = UDim2.new(1, 0, 1, 0) miniRing.AnchorPoint = Vector2.new(0.5, 0.5) miniRing.Position = UDim2.new(0.5, 0, 0.5, 0) miniRing.BackgroundColor3 = COLORS.accent miniRing.BackgroundTransparency = 0.6 miniRing.BorderSizePixel = 0 miniRing.Parent = miniButton corner(miniRing, 10)
+            miniRing.Size = UDim2.new(1, 0, 1, 0)
+            miniRing.AnchorPoint = Vector2.new(0.5, 0.5)
+            miniRing.Position = UDim2.new(0.5, 0, 0.5, 0)
+            miniRing.BackgroundColor3 = COLORS.accent
+            miniRing.BackgroundTransparency = 0.6
+            miniRing.BorderSizePixel = 0
+            miniRing.Parent = miniButton
+            corner(miniRing, 8)
             TweenService:Create(miniRing, TweenInfo.new(1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Size = UDim2.new(1.5, 0, 1.5, 0), BackgroundTransparency = 1}):Play()
         end
     end
+
     local function applyMinimized()
-        minimized = config.minimized == true tabs.Visible = not minimized for _, page in ipairs(pages) do page.Visible = false end minButton.Text = minimized and "+" or "−" miniButton.Visible = minimized
+        minimized = config.minimized == true
+        tabs.Visible = not minimized
+        for _, page in ipairs(pages) do page.Visible = false end
+        minButton.Text = minimized and "+" or "−"
+        miniButton.Visible = minimized
         if minimized then
-            main.Visible = true TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 40)}):Play()
-            task.delay(0.25, function() if minimized then main.Visible = false end end) updateMiniPulse()
+            main.Visible = true
+            TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 40)}):Play()
+            task.delay(0.25, function() if minimized then main.Visible = false end end)
+            updateMiniPulse()
         else
-            main.Visible = true TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 420, 0, 580)}):Play()
-            pages[currentTab].Visible = true if miniRing then miniRing:Destroy() miniRing = nil end
+            main.Visible = true
+            TweenService:Create(main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 420)}):Play()
+            pages[currentTab].Visible = true
+            if miniRing then miniRing:Destroy() miniRing = nil end
         end
     end
-    minButton.Activated:Connect(function() config.minimized = not config.minimized saveConfig() applyMinimized() end)
-    miniButton.Activated:Connect(function() config.minimized = false saveConfig() applyMinimized() end)
+
+    minButton.Activated:Connect(function()
+        config.minimized = not config.minimized
+        saveConfig()
+        applyMinimized()
+    end)
+
+    miniButton.Activated:Connect(function()
+        config.minimized = false
+        saveConfig()
+        applyMinimized()
+    end)
 
     do
-        local dragging = false local dragStart, startPos
+        local dragging = false
+        local dragStart, startPos
         top.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true dragStart = input.Position startPos = main.Position
+                dragging = true
+                dragStart = input.Position
+                startPos = main.Position
                 input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then if dragging then dragging = false config.posX = main.Position.X.Scale config.posY = main.Position.Y.Scale saveConfig() end end
+                    if input.UserInputState == Enum.UserInputState.End then
+                        if dragging then
+                            dragging = false
+                            config.posX = main.Position.X.Scale
+                            config.posY = main.Position.Y.Scale
+                            saveConfig()
+                        end
+                    end
                 end)
             end
         end)
@@ -611,127 +1090,68 @@ local function loadMainGui()
             end
         end)
     end
+
     do
         local dragging = false
         miniButton.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                local isDrag = false local startInputPos = input.Position local startGuiPos = miniButton.Position dragging = false
+                local isDrag = false
+                local startInputPos = input.Position
+                local startGuiPos = miniButton.Position
+                dragging = false
                 local moveConn = UserInputService.InputChanged:Connect(function(moveInput)
                     if moveInput.UserInputType == input.UserInputType then
                         local delta = moveInput.Position - startInputPos
-                        if delta.Magnitude > 8 then isDrag = true dragging = true miniButton.Position = UDim2.new(startGuiPos.X.Scale + (startGuiPos.X.Offset + delta.X) / viewportSize.X, 0, startGuiPos.Y.Scale + (startGuiPos.Y.Offset + delta.Y) / viewportSize.Y, 0) end
+                        if delta.Magnitude > 8 then
+                            isDrag = true
+                            dragging = true
+                            miniButton.Position = UDim2.new(startGuiPos.X.Scale + (startGuiPos.X.Offset + delta.X) / viewportSize.X, 0, startGuiPos.Y.Scale + (startGuiPos.Y.Offset + delta.Y) / viewportSize.Y, 0)
+                        end
                     end
                 end)
                 input.Changed:Connect(function(prop)
                     if prop == "UserInputState" and input.UserInputState == Enum.UserInputState.End then
                         if moveConn then moveConn:Disconnect() end
-                        if dragging then dragging = false config.miniX = miniButton.Position.X.Scale config.miniY = miniButton.Position.Y.Scale saveConfig()
-                        elseif not isDrag then config.minimized = false saveConfig() applyMinimized() end
+                        if dragging then
+                            dragging = false
+                            config.miniX = miniButton.Position.X.Scale
+                            config.miniY = miniButton.Position.Y.Scale
+                            saveConfig()
+                        elseif not isDrag then
+                            config.minimized = false
+                            saveConfig()
+                            applyMinimized()
+                        end
                     end
                 end)
             end
         end)
     end
 
-    main.AnchorPoint = Vector2.new(0.5, 0.5) main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0) miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
-    main.Visible = true main.Size = UDim2.new(0, 420, 0, 0)
-    TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 420, 0, 580)}):Play()
+    main.AnchorPoint = Vector2.new(0.5, 0.5)
+    main.Position = UDim2.new(config.posX or 0.5, 0, config.posY or 0.5, 0)
+    miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
+    main.Visible = true
+    main.Size = UDim2.new(0, 380, 0, 0)
+    TweenService:Create(main, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 420)}):Play()
 
-    refreshAuto() refreshAntiAfk() setTab(currentTab) applyMinimized() hookNotificationUI() updatePreview()
+    refreshAuto()
+    setTab(currentTab)
+    applyMinimized()
+    hookNotificationUI()
+    updatePreview()
 
-    camera:GetPropertyChangedSignal("ViewportSize"):Connect(function() viewportSize = camera.ViewportSize uiScaleFactor = computeScale() TweenService:Create(uiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = uiScaleFactor}):Play() end)
-    UserInputService.InputBegan:Connect(function() lastActivityTime = os.clock() end)
-    UserInputService.WindowFocused:Connect(function() lastActivityTime = os.clock() end)
-
-    player.Idled:Connect(function()
-        if antiAfkEnabled and keyVerified then
-            pcall(function()
-                local char = player.Character
-                if char and char:FindFirstChild("Humanoid") then char.Humanoid.Jump = true end
-            end)
-        end
+    camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        viewportSize = camera.ViewportSize
+        uiScaleFactor = computeScale()
+        TweenService:Create(uiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = uiScaleFactor}):Play()
     end)
 
-    task.spawn(function()
-        while true do
-            task.wait(15)
-            if keyVerified and gui.Parent then
-                if trialMode and (os.clock() - trialStartTime > 2700) then
-                    addSnipe("⚠️ 45 minute free trial expired. Enter a key for permanent access.", COLORS.bad)
-                    task.wait(2) keyVerified = false trialMode = false gui:Destroy() break
-                end
-            end
-        end
-    end)
 end
 
 -- ==========================================
--- EVENT CHECKER LOOP
+-- START MAIN GUI
 -- ==========================================
-task.spawn(function()
-    local requestFunc = (syn and syn.request) or (http and http.request) or (http_request) or request
-    if not requestFunc then return end
-    while true do
-        -- FIX: Slowed down to 20 seconds to save mobile CPU/Internet
-        task.wait(20)
-        if not keyVerified and not eventStarted then
-            task.spawn(function()
-                pcall(function()
-                    local response = requestFunc({Url = CHECK_START_URL, Method = "GET"})
-                    if response and response.Body then
-                        local data = HttpService:JSONDecode(response.Body)
-                        if data and data.started == true then eventStarted = true end
-                    end
-                end)
-            end)
-        end
-        if eventStarted and not keyVerified and not PlayerGui:FindFirstChild("LanderHubKey") then
-            local keyGui = Instance.new("ScreenGui")
-            keyGui.Name = "LanderHubKey" keyGui.IgnoreGuiInset = true keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling keyGui.Parent = PlayerGui
-            local blur = Instance.new("Frame")
-            blur.Size = UDim2.new(1, 0, 1, 0) blur.BackgroundColor3 = Color3.fromRGB(0, 0, 0) blur.BackgroundTransparency = 0.5 blur.Parent = keyGui
-            local keyFrame = Instance.new("Frame")
-            keyFrame.Size = UDim2.new(0, 340, 0, 260) keyFrame.Position = UDim2.new(0.5, -170, 0.5, -130) keyFrame.BackgroundColor3 = COLORS.bg keyFrame.BorderSizePixel = 0 keyFrame.Parent = keyGui corner(keyFrame, 16) stroke(keyFrame, COLORS.accent, 2, 0.2)
-            local title = Instance.new("TextLabel")
-            title.Size = UDim2.new(1, -30, 0, 35) title.Position = UDim2.new(0, 15, 0, 12) title.BackgroundTransparency = 1 title.Text = "🌮 LANDER HUB" title.TextColor3 = COLORS.text title.Font = Enum.Font.GothamBlack title.TextSize = 19 title.TextXAlignment = Enum.TextXAlignment.Left title.Parent = keyFrame
-            local subtitle = Instance.new("TextLabel")
-            subtitle.Size = UDim2.new(1, -30, 0, 20) subtitle.Position = UDim2.new(0, 15, 0, 48) subtitle.BackgroundTransparency = 1 subtitle.Text = "Free 45 mins on Tuesdays!" subtitle.TextColor3 = COLORS.muted subtitle.Font = Enum.Font.Gotham subtitle.TextSize = 12 subtitle.TextXAlignment = Enum.TextXAlignment.Left subtitle.Parent = keyFrame
-            local keyBox = Instance.new("TextBox")
-            keyBox.Size = UDim2.new(1, -30, 0, 38) keyBox.Position = UDim2.new(0, 15, 0, 75) keyBox.BackgroundColor3 = COLORS.panel keyBox.BorderSizePixel = 0 keyBox.PlaceholderText = "Enter key for permanent access..." keyBox.TextColor3 = COLORS.text keyBox.Font = Enum.Font.GothamMedium keyBox.TextSize = 13 keyBox.Parent = keyFrame corner(keyBox, 10)
-            
-            local boxStroke = stroke(keyBox, COLORS.border, 1.5, 0.3)
-            keyBox.Focused:Connect(function() TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = COLORS.accent, Thickness = 2, Transparency = 0}):Play() end)
-            keyBox.FocusLost:Connect(function() TweenService:Create(boxStroke, TweenInfo.new(0.2), {Color = COLORS.border, Thickness = 1.5, Transparency = 0.3}):Play() end)
+loadMainGui()
 
-            local keyButton = createButton(keyFrame, "VERIFY KEY (Permanent)", UDim2.new(1, -30, 0, 36), UDim2.new(0, 15, 0, 122), COLORS.accent, COLORS.text, 12)
-            local trialButton = createButton(keyFrame, "START FREE 45 MIN", UDim2.new(1, -30, 0, 36), UDim2.new(0, 15, 0, 165), COLORS.good, COLORS.text, 12)
-            local keyStatus = Instance.new("TextLabel")
-            keyStatus.Size = UDim2.new(1, -30, 0, 25) keyStatus.Position = UDim2.new(0, 15, 0, 207) keyStatus.BackgroundTransparency = 1 keyStatus.TextColor3 = COLORS.bad keyStatus.Font = Enum.Font.Gotham keyStatus.TextSize = 11 keyStatus.Parent = keyFrame
-
-            local checking = false
-            local function tryKey()
-                if checking or keyVerified then return end
-                local enteredKey = tostring(keyBox.Text or ""):gsub("^%s+", ""):gsub("%s+$", ""):upper()
-                if enteredKey == "" then keyStatus.Text = "Enter a key." return end
-                checking = true keyButton.Text = "CHECKING..." keyStatus.Text = "Contacting server..."
-                task.spawn(function()
-                    local data, err = relayRequest(VERIFY_URL, { key = enteredKey })
-                    if data and data.valid == true then
-                        keyVerified = true trialMode = false keyStatus.Text = "Key accepted!" task.wait(0.5) keyGui:Destroy() loadMainGui()
-                    else
-                        keyButton.Text = "VERIFY KEY (Permanent)" keyStatus.Text = tostring(err or "Invalid or expired key.") checking = false
-                    end
-                end)
-            end
-            local function startTrial()
-                if keyVerified then return end
-                keyVerified = true trialMode = true trialStartTime = os.clock() keyGui:Destroy() loadMainGui()
-            end
-            keyButton.Activated:Connect(tryKey) trialButton.Activated:Connect(startTrial)
-            keyBox.FocusLost:Connect(function(enter) if enter then tryKey() end end)
-        end
-    end
-end)
-
-if isLocalAdmin then loadMainGui() end
-print("Lander Hub Waiting...")
+print("Lander Hub Ready.")
