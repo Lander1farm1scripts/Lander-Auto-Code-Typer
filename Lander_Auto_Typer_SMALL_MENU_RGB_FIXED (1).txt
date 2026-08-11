@@ -1,5 +1,3 @@
-print("Lander Hub Starting...")
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,9 +8,10 @@ local player = Players.LocalPlayer
 if not player then return end
 local PlayerGui = player:WaitForChild("PlayerGui")
 
--- Cleanup old GUIs
 pcall(function()
-    if PlayerGui:FindFirstChild("LanderAutoTyper") then PlayerGui.LanderAutoTyper:Destroy() end
+    if PlayerGui:FindFirstChild("LanderAutoTyper") then 
+        PlayerGui.LanderAutoTyper:Destroy() 
+    end
 end)
 
 local CONFIG_FILE = "lander_auto_typer_config.json"
@@ -29,7 +28,6 @@ local config = {
 }
 
 local DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1536140418838958080/Kf_pxYPLwUbfd6SZ-1iJtTlS_-8Mgu23BcKEXVdkAMuGaZsJeRJNKotvUiPJQrxKHUAl"
-
 local lastCode = ""
 local sessionStats = { startTime = os.time(), codesRedeemed = 0, brainrotsSniped = 0 }
 
@@ -39,11 +37,34 @@ local COLORS = {
     accent = Color3.fromRGB(120, 50, 255), accentLt = Color3.fromRGB(160, 90, 255),
     text = Color3.fromRGB(245, 245, 250), muted = Color3.fromRGB(150, 150, 160),
     good = Color3.fromRGB(50, 200, 120), bad = Color3.fromRGB(230, 70, 80),
-    warn = Color3.fromRGB(245, 190, 65)
+    warn = Color3.fromRGB(245, 190, 65), border = Color3.fromRGB(45, 45, 60)
 }
 
-local function corner(obj, r) local c=Instance.new("UICorner") c.CornerRadius=UDim.new(0,r or 8) c.Parent=obj return c end
-local function padding(obj, l, r, t, b) local p=Instance.new("UIPadding") p.PaddingLeft=UDim.new(0,l or 0) p.PaddingRight=UDim.new(0,r or 0) p.PaddingTop=UDim.new(0,t or 0) p.PaddingBottom=UDim.new(0,b or 0) p.Parent=obj return p end
+local function corner(obj, r)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, r or 8)
+    c.Parent = obj
+    return c
+end
+
+local function stroke(obj, col, t, tr)
+    local s = Instance.new("UIStroke")
+    s.Color = col or COLORS.border
+    s.Thickness = t or 1
+    s.Transparency = tr or 0.3
+    s.Parent = obj
+    return s
+end
+
+local function padding(obj, l, r, t, b)
+    local p = Instance.new("UIPadding")
+    p.PaddingLeft = UDim.new(0, l or 0)
+    p.PaddingRight = UDim.new(0, r or 0)
+    p.PaddingTop = UDim.new(0, t or 0)
+    p.PaddingBottom = UDim.new(0, b or 0)
+    p.Parent = obj
+    return p
+end
 
 local function createButton(parent, text, size, pos, bgColor, textColor, fontSize)
     local btn = Instance.new("TextButton")
@@ -58,10 +79,12 @@ local function createButton(parent, text, size, pos, bgColor, textColor, fontSiz
     btn.AutoButtonColor = false
     btn.Parent = parent
     corner(btn, 8)
-    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
-    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = bgColor or COLORS.panel3}):Play() end)
-    btn.MouseButton1Down:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = (bgColor or COLORS.panel3):Lerp(Color3.new(0,0,0), 0.2)}):Play() end)
-    btn.MouseButton1Up:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = bgColor or COLORS.panel3}):Play() end)
+    stroke(btn, COLORS.border, 1.5, 0.4)
+    local orig = bgColor or COLORS.panel3
+    btn.MouseEnter:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = orig:Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
+    btn.MouseLeave:Connect(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = orig}):Play() end)
+    btn.MouseButton1Down:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = orig:Lerp(Color3.new(0,0,0), 0.2)}):Play() end)
+    btn.MouseButton1Up:Connect(function() TweenService:Create(btn, TweenInfo.new(0.05), {BackgroundColor3 = orig}):Play() end)
     return btn
 end
 
@@ -69,8 +92,8 @@ local function loadConfig()
     if not (readfile and isfile and isfile(CONFIG_FILE)) then return end
     local ok, decoded = pcall(function() return HttpService:JSONDecode(readfile(CONFIG_FILE)) end)
     if not ok or type(decoded) ~= "table" then return end
-    for key, value in pairs(decoded) do
-        if config[key] ~= nil then config[key] = value end
+    for key, value in pairs(decoded) do 
+        if config[key] ~= nil then config[key] = value end 
     end
 end
 
@@ -81,20 +104,14 @@ end
 
 loadConfig()
 
--- ==========================================
--- MAIN GUI FUNCTION
--- ==========================================
 local function loadMainGui()
     local camera = workspace.CurrentCamera
     local viewportSize = camera and camera.ViewportSize or Vector2.new(800, 600)
-
+    
     local function computeScale()
         local w, h = viewportSize.X, viewportSize.Y
-        local scaleW = w / 420
-        local scaleH = h / 460
-        return math.clamp(math.min(scaleW, scaleH), 0.6, 0.95)
+        return math.clamp(math.min(w / 420, h / 460), 0.6, 0.95)
     end
-
     local uiScaleFactor = computeScale()
 
     local gui = Instance.new("ScreenGui")
@@ -122,24 +139,7 @@ local function loadMainGui()
     main.BorderSizePixel = 0
     main.Parent = safeContainer
     corner(main, 12)
-
-    local mainStroke = Instance.new("UIStroke", main)
-    mainStroke.Color = COLORS.accent
-    mainStroke.Thickness = 1.5
-    mainStroke.Transparency = 0.2
-
-    local shadow = Instance.new("ImageLabel")
-    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    shadow.Position = UDim2.new(0.5, 0, 0.5, 4)
-    shadow.Size = UDim2.new(1, 30, 1, 30)
-    shadow.BackgroundTransparency = 1
-    shadow.Image = "rbxassetid://1316045217"
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    shadow.ImageTransparency = 0.5
-    shadow.ScaleType = Enum.ScaleType.Slice
-    shadow.SliceCenter = Rect.new(10, 10, 118, 118)
-    shadow.ZIndex = main.ZIndex - 1
-    shadow.Parent = main
+    stroke(main, COLORS.accent, 1.5, 0.2)
 
     local top = Instance.new("Frame")
     top.Size = UDim2.new(1, 0, 0, 50)
@@ -187,7 +187,7 @@ local function loadMainGui()
     tabLayout.Padding = UDim.new(0, 5)
     tabLayout.Parent = tabs
 
-    local tabNames = { "Typer", "Keywords", "Replace", "Snipes", "Stats", "Settings" }
+    local tabNames = {"Typer", "Keywords", "Replace", "Snipes", "Stats", "Settings"}
     local tabButtons = {}
 
     for i, name in ipairs(tabNames) do
@@ -203,10 +203,11 @@ local function loadMainGui()
         button.Parent = tabs
         corner(button, 6)
         
-        local tabStroke = Instance.new("UIStroke", button)
+        local tabStroke = Instance.new("UIStroke")
         tabStroke.Color = COLORS.panel3
         tabStroke.Thickness = 1.5
         tabStroke.Transparency = 0.5
+        tabStroke.Parent = button
         
         tabButtons[i] = {btn = button, stroke = tabStroke}
         
@@ -219,7 +220,6 @@ local function loadMainGui()
     end
 
     local pages = {}
-
     local function makePage(name)
         local page = Instance.new("ScrollingFrame")
         page.Name = name
@@ -272,7 +272,7 @@ local function loadMainGui()
     end
 
     local autoToggle = createButton(typerPage, "AUTO: ON", UDim2.new(1, -8, 0, 36), UDim2.new(0, 4, 0, 0), COLORS.good, COLORS.text, 12)
-
+    
     local countLabel = Instance.new("TextLabel")
     countLabel.BackgroundTransparency = 1
     countLabel.Text = "CAPTURE COUNT"
@@ -292,10 +292,7 @@ local function loadMainGui()
     countBox.TextSize = 12
     countBox.Parent = typerPage
     corner(countBox, 8)
-    local countStroke = Instance.new("UIStroke", countBox)
-    countStroke.Color = COLORS.panel3
-    countBox.Focused:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
-    countBox.FocusLost:Connect(function() TweenService:Create(countStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
+    stroke(countBox, COLORS.border, 1.5, 0.3)
 
     local previewLabel = Instance.new("TextLabel")
     previewLabel.BackgroundTransparency = 1
@@ -345,10 +342,7 @@ local function loadMainGui()
     manualBox.TextSize = 12
     manualBox.Parent = manualRow
     corner(manualBox, 8)
-    local manualStroke = Instance.new("UIStroke", manualBox)
-    manualStroke.Color = COLORS.panel3
-    manualBox.Focused:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
-    manualBox.FocusLost:Connect(function() TweenService:Create(manualStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
+    stroke(manualBox, COLORS.border, 1.5, 0.3)
 
     local manualRedeem = createButton(manualRow, "REDEEM", UDim2.new(0, 74, 1, 0), UDim2.new(1, -74, 0, 0), COLORS.panel3, COLORS.text, 11)
 
@@ -374,11 +368,7 @@ local function loadMainGui()
         box.TextSize = 11
         box.Parent = keywordPage
         corner(box, 6)
-        local bStroke = Instance.new("UIStroke", box)
-        bStroke.Color = COLORS.panel3
-        box.Focused:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.accent}):Play() end)
-        box.FocusLost:Connect(function() TweenService:Create(bStroke, TweenInfo.new(0.2), {Color = COLORS.panel3}):Play() end)
-
+        stroke(box, COLORS.border, 1, 0.3)
         keywordBoxes[i] = box
         box.FocusLost:Connect(function()
             keywords[i] = box.Text
@@ -405,6 +395,7 @@ local function loadMainGui()
         kw.TextSize = 11
         kw.Parent = row
         corner(kw, 6)
+        stroke(kw, COLORS.border, 1, 0.3)
 
         local arrow = Instance.new("TextLabel")
         arrow.Size = UDim2.new(0, 20, 1, 0)
@@ -429,6 +420,7 @@ local function loadMainGui()
         rep.TextSize = 11
         rep.Parent = row
         corner(rep, 6)
+        stroke(rep, COLORS.border, 1, 0.3)
 
         replaceBoxes[i] = { kw = kw, rep = rep }
         kw.FocusLost:Connect(function() replacements[i].kw = kw.Text config.replaceRules[i].kw = kw.Text saveConfig() end)
@@ -453,7 +445,7 @@ local function loadMainGui()
     snipeList.AutomaticCanvasSize = Enum.AutomaticSize.Y
     snipeList.Parent = snipePage
     corner(snipeList, 8)
-    Instance.new("UIStroke", snipeList).Color = COLORS.panel2
+    stroke(snipeList, COLORS.border, 1, 0.3)
 
     local snipeLayout = Instance.new("UIListLayout")
     snipeLayout.Padding = UDim.new(0, 5)
@@ -514,7 +506,7 @@ local function loadMainGui()
         card.LayoutOrder = order
         card.Parent = parent
         corner(card, 8)
-        Instance.new("UIStroke", card).Color = COLORS.panel2
+        stroke(card, COLORS.border, 1, 0.3)
         local valLabel = Instance.new("TextLabel")
         valLabel.Size = UDim2.new(1, -16, 0, 26)
         valLabel.Position = UDim2.new(0, 8, 0, 8)
@@ -566,7 +558,6 @@ local function loadMainGui()
     settingsTitle.Size = UDim2.new(1, -8, 0, 18)
     settingsTitle.Parent = settingsPage
 
-
     local spacer1 = Instance.new("Frame")
     spacer1.Size = UDim2.new(1, -8, 0, 8)
     spacer1.BackgroundTransparency = 1
@@ -592,7 +583,7 @@ local function loadMainGui()
     statusLabel.Parent = settingsPage
     corner(statusLabel, 8)
     padding(statusLabel, 10, 10, 8, 8)
-    Instance.new("UIStroke", statusLabel).Color = COLORS.panel2
+    stroke(statusLabel, COLORS.border, 1, 0.3)
 
     local function updatePreview()
         if #collected > 0 then preview.Text = table.concat(collected)
@@ -627,7 +618,6 @@ local function loadMainGui()
         updatePreview()
     end
 
-    -- ANTI-CHEAT SAFE REDEEM
     local function redeemCode(code)
         if type(code) ~= "string" or code == "" then return false end
         local success = false
@@ -762,7 +752,6 @@ local function loadMainGui()
                 }
             }
         }
-        -- Background thread to prevent freezing
         task.spawn(function()
             pcall(function()
                 requestFunc({
@@ -876,7 +865,6 @@ local function loadMainGui()
         return false
     end
 
-    -- LIGHTWEIGHT DETECTION (No GetDescendants freeze)
     local function hookLabel(label)
         if seen[label] or ownedByUs(label) then return end
         seen[label] = true
@@ -973,7 +961,7 @@ local function loadMainGui()
             data.btn.TextColor3 = isSelected and COLORS.text or COLORS.muted
             data.btn.BackgroundColor3 = isSelected and COLORS.panel2 or COLORS.panel
             TweenService:Create(data.stroke, TweenInfo.new(0.2), {
-                Color = isSelected and COLORS.accent or COLORS.panel3,
+                Color = isSelected and COLORS.accent or COLORS.border,
                 Transparency = isSelected and 0 or 0.5,
                 Thickness = isSelected and 2 or 1.5
             }):Play()
@@ -990,19 +978,18 @@ local function loadMainGui()
     miniButton.Size = UDim2.new(0, 64, 0, 36)
     miniButton.AnchorPoint = Vector2.new(0.5, 0.5)
     miniButton.Position = UDim2.new(config.miniX or 0.88, 0, config.miniY or 0.12, 0)
-    miniButton.BackgroundColor3 = Color3.fromRGB(120, 50, 255)
+    miniButton.BackgroundColor3 = COLORS.accent
     miniButton.BorderSizePixel = 0
     miniButton.Text = "LANDER"
     miniButton.Font = Enum.Font.GothamBlack
     miniButton.TextSize = 11
-    miniButton.TextColor3 = Color3.new(1, 1, 1)
+    miniButton.TextColor3 = COLORS.text
     miniButton.AutoButtonColor = false
     miniButton.Visible = false
     miniButton.Parent = safeContainer
     corner(miniButton, 8)
-    Instance.new("UIStroke", miniButton).Color = Color3.fromRGB(160, 90, 255)
+    stroke(miniButton, COLORS.accentLt, 1.5, 0.3)
 
-    -- OPTIMIZED RGB LOOP
     local hue = 0
     task.spawn(function()
         while miniButton and miniButton.Parent do
@@ -1146,12 +1133,7 @@ local function loadMainGui()
         uiScaleFactor = computeScale()
         TweenService:Create(uiScale, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Scale = uiScaleFactor}):Play()
     end)
-
 end
 
--- ==========================================
--- START MAIN GUI
--- ==========================================
 loadMainGui()
-
 print("Lander Hub Ready.")
