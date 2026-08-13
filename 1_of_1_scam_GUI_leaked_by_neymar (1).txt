@@ -1,0 +1,304 @@
+print("join neymarish bio he leaks paid for free😆")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local State = { enabled = false }
+local originalObserve = nil
+local originalPopulate = nil
+local descendantConnection = nil
+
+local function setAllBanners(visible)
+    for _, instance in ipairs(Workspace:GetDescendants()) do
+        if instance.Name == "1OF1Banner" then
+            instance.Visible = visible
+        end
+    end
+end
+
+local function applyHooks()
+    if originalObserve == nil then
+        local BrainrotCard = require(ReplicatedStorage.Shared.BrainrotCard)
+        originalObserve = BrainrotCard.ObserveOneOfOne
+        BrainrotCard.ObserveOneOfOne = function(record, callback)
+            return originalObserve(record, function(_) callback(true) end)
+        end
+    end
+    if originalPopulate == nil then
+        local OverheadController = require(ReplicatedStorage.Controllers.AnimalOverheadController)
+        originalPopulate = OverheadController.Populate
+        OverheadController.Populate = function(self, data)
+            originalPopulate(self, data)
+            local banner = data.Overhead:FindFirstChild("1OF1Banner")
+            if banner then banner.Visible = true end
+        end
+    end
+    setAllBanners(true)
+    if descendantConnection then descendantConnection:Disconnect() end
+    descendantConnection = Workspace.DescendantAdded:Connect(function(instance)
+        if instance.Name == "1OF1Banner" then instance.Visible = true end
+    end)
+end
+
+local function removeHooks()
+    if originalObserve then
+        local BrainrotCard = require(ReplicatedStorage.Shared.BrainrotCard)
+        BrainrotCard.ObserveOneOfOne = originalObserve
+        originalObserve = nil
+    end
+    if originalPopulate then
+        local OverheadController = require(ReplicatedStorage.Controllers.AnimalOverheadController)
+        OverheadController.Populate = originalPopulate
+        originalPopulate = nil
+    end
+    if descendantConnection then
+        descendantConnection:Disconnect()
+        descendantConnection = nil
+    end
+    setAllBanners(false)
+end
+
+local function toggleScam(on)
+    State.enabled = on
+    if on then
+        applyHooks()
+    else
+        removeHooks()
+    end
+end
+
+local function createUI()
+    for _, old in ipairs(CoreGui:GetChildren()) do
+        if old.Name == "OneOfOneScam" or old.Name == "OneOfOne" then
+            old:Destroy()
+        end
+    end
+
+    local SILVER = Color3.fromRGB(210, 210, 220)
+    local GREEN = Color3.fromRGB(0, 255, 100)
+    local RED = Color3.fromRGB(255, 70, 100)
+    local DARK_BG = Color3.fromRGB(14, 12, 20)
+    local CARD_BG = Color3.fromRGB(30, 26, 38)
+    local MAIN_TEXT = Color3.fromRGB(245, 245, 250)
+    local MUTED_TEXT = Color3.fromRGB(190, 185, 200)
+
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "OneOfOneScam"
+    sg.ResetOnSpawn = false
+    sg.DisplayOrder = 999
+    sg.IgnoreGuiInset = true
+    sg.Parent = CoreGui
+
+    local main = Instance.new("Frame", sg)
+    main.Size = UDim2.new(0, 220, 0, 100)
+    main.Position = UDim2.new(0.5, -110, 0.5, -50)
+    main.BackgroundColor3 = DARK_BG
+    main.BackgroundTransparency = 0.15
+    main.Active = true
+    main.ClipsDescendants = true
+    Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
+
+    local border = Instance.new("UIStroke", main)
+    border.Color = SILVER
+    border.Thickness = 1.5
+    border.Transparency = 0.3
+
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+
+    main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = main.Position
+            local conn
+            conn = input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                    conn:Disconnect()
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    local header = Instance.new("Frame", main)
+    header.Size = UDim2.new(1, 0, 0, 34)
+    header.BackgroundTransparency = 1
+    header.ZIndex = 2
+
+    local title = Instance.new("TextLabel", header)
+    title.Size = UDim2.new(1, -36, 1, 0)
+    title.Position = UDim2.new(0, 12, 0, 0)
+    title.BackgroundTransparency = 1
+    title.Text = "1 of 1 Scam"
+    title.TextColor3 = MAIN_TEXT
+    title.Font = Enum.Font.GothamBlack
+    title.TextSize = 16
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.ZIndex = 2
+
+    local closeBtn = Instance.new("TextButton", header)
+    closeBtn.Size = UDim2.new(0, 24, 0, 24)
+    closeBtn.Position = UDim2.new(1, -30, 0.5, -12)
+    closeBtn.BackgroundTransparency = 1
+    closeBtn.Text = "X"
+    closeBtn.TextColor3 = MUTED_TEXT
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 14
+    closeBtn.ZIndex = 2
+    local circle = Instance.new("UICorner", closeBtn)
+    circle.CornerRadius = UDim.new(1, 0)
+
+    closeBtn.MouseEnter:Connect(function()
+        TweenService:Create(closeBtn, TweenInfo.new(0.15), {
+            BackgroundTransparency = 0.8,
+            BackgroundColor3 = Color3.fromRGB(50, 40, 50)
+        }):Play()
+        TweenService:Create(closeBtn, TweenInfo.new(0.15), {
+            TextColor3 = RED
+        }):Play()
+    end)
+    closeBtn.MouseLeave:Connect(function()
+        TweenService:Create(closeBtn, TweenInfo.new(0.15), {
+            BackgroundTransparency = 1,
+            BackgroundColor3 = Color3.fromRGB(0,0,0)
+        }):Play()
+        TweenService:Create(closeBtn, TweenInfo.new(0.15), {
+            TextColor3 = MUTED_TEXT
+        }):Play()
+    end)
+
+    closeBtn.MouseButton1Click:Connect(function()
+        sg:Destroy()
+        if State.enabled then
+            toggleScam(false)
+        end
+    end)
+
+    local content = Instance.new("Frame", main)
+    content.Size = UDim2.new(1, -24, 1, -42)
+    content.Position = UDim2.new(0, 12, 0, 38)
+    content.BackgroundTransparency = 1
+
+    local row = Instance.new("Frame", content)
+    row.Size = UDim2.new(1, 0, 0, 30)
+    row.BackgroundColor3 = CARD_BG
+    row.BackgroundTransparency = 0.5
+    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 8)
+    local rowStroke = Instance.new("UIStroke", row)
+    rowStroke.Color = SILVER
+    rowStroke.Thickness = 0.8
+    rowStroke.Transparency = 0.5
+
+    local label = Instance.new("TextLabel", row)
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0, 10, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = "Enable Scam"
+    label.TextColor3 = MAIN_TEXT
+    label.Font = Enum.Font.GothamBold
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+
+    local pillBg = Instance.new("Frame", row)
+    pillBg.Size = UDim2.new(0, 36, 0, 19)
+    pillBg.Position = UDim2.new(1, -44, 0.5, -9.5)
+    pillBg.BackgroundColor3 = RED
+    pillBg.BorderSizePixel = 0
+    pillBg.ZIndex = 8
+    Instance.new("UICorner", pillBg).CornerRadius = UDim.new(0, 10)
+    local pStroke = Instance.new("UIStroke", pillBg)
+    pStroke.Color = RED
+    pStroke.Thickness = 1
+    local dot = Instance.new("Frame", pillBg)
+    dot.Size = UDim2.new(0, 13, 0, 13)
+    dot.Position = UDim2.new(0, 2, 0.5, -6.5)
+    dot.BackgroundColor3 = Color3.fromRGB(80, 50, 30)
+    dot.BorderSizePixel = 0
+    dot.ZIndex = 9
+    Instance.new("UICorner", dot).CornerRadius = UDim.new(0, 4)
+
+    local function setToggle(on)
+        local bgColor = on and GREEN or RED
+        local dotColor = on and DARK_BG or Color3.fromRGB(80, 50, 30)
+        TweenService:Create(pillBg, TweenInfo.new(0.18), {
+            BackgroundColor3 = bgColor
+        }):Play()
+        TweenService:Create(pStroke, TweenInfo.new(0.18), {
+            Color = bgColor
+        }):Play()
+        TweenService:Create(dot, TweenInfo.new(0.18, Enum.EasingStyle.Back), {
+            Position = on and UDim2.new(1, -15, 0.5, -6.5) or UDim2.new(0, 2, 0.5, -6.5),
+            BackgroundColor3 = dotColor
+        }):Play()
+    end
+
+    local status = Instance.new("TextLabel", content)
+    status.Size = UDim2.new(1, 0, 0, 16)
+    status.Position = UDim2.new(0, 0, 1, -18)
+    status.BackgroundTransparency = 1
+    status.Text = "Status: OFF"
+    status.TextColor3 = RED
+    status.Font = Enum.Font.GothamBlack
+    status.TextSize = 10
+    status.TextXAlignment = Enum.TextXAlignment.Left
+
+    local function updateStatus()
+        if State.enabled then
+            status.Text = "Status: ON"
+            status.TextColor3 = GREEN
+        else
+            status.Text = "Status: OFF"
+            status.TextColor3 = RED
+        end
+    end
+
+    local toggleButton = Instance.new("TextButton", row)
+    toggleButton.Size = UDim2.new(1, 0, 1, 0)
+    toggleButton.BackgroundTransparency = 1
+    toggleButton.Text = ""
+    toggleButton.ZIndex = 10
+
+    toggleButton.MouseButton1Click:Connect(function()
+        State.enabled = not State.enabled
+        toggleScam(State.enabled)
+        setToggle(State.enabled)
+        updateStatus()
+    end)
+
+    setToggle(false)
+    updateStatus()
+
+    local hotkeyConn
+    hotkeyConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if gameProcessed then return end
+        if input.KeyCode == Enum.KeyCode.One and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+            State.enabled = not State.enabled
+            toggleScam(State.enabled)
+            setToggle(State.enabled)
+            updateStatus()
+        end
+    end)
+
+    sg.Destroying:Connect(function()
+        if hotkeyConn then hotkeyConn:Disconnect() end
+        if State.enabled then
+            toggleScam(false)
+        end
+    end)
+end
+
+createUI()
