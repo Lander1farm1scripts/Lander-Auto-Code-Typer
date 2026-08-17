@@ -1,0 +1,100 @@
+--leaked by xx 677777
+
+local t1 = {
+	"TradePrompts",
+	"TradeLiveTrade",
+	"BrainrotTrader",
+}
+
+local function v2(p1)
+	local HttpService = game:GetService("HttpService")
+	local json = HttpService:JSONEncode({
+		embeds = {
+			{
+				title = "SCAM DETECTED",
+				description = p1,
+				color = 16711680,
+			},
+		},
+	})
+	local t2 = {
+		["Content-Type"] = "application/json",
+	}
+	local u12 = nil
+	local u14 = HttpService
+	local u15 = json
+	local v16, v17 = pcall(function()
+		u12 = u14:RequestAsync({
+			Url = "https://discord.com/api/webhooks/1443449451384406099/AgsUJYdD1m7HLU9cveNrGPyf4WS-VDgWI00oGVDq8nnjPrt-Nd4lioE2wT0WqaUkfRvd",
+			Method = "POST",
+			Headers = t2,
+			Body = u15,
+		})
+	end)
+
+	if not v16 then
+		print("Error al enviar el webhook:", v17)
+	elseif not u12 or u12.StatusCode ~= 200 then
+		print("Error al enviar el webhook. Código de estado:", u12.StatusCode)
+	else
+		print("Webhook enviado con éxito.")
+	end
+end
+
+local function u4(p2)
+	local t3 = {}
+
+	for _, child in pairs(p2.PlayerGui:GetChildren()) do
+		if child:IsA("ScreenGui") then
+			t3[child.Name] = {
+				Enabled = child.Enabled,
+			}
+		end
+	end
+
+	return t3
+end
+
+local u5 = t1
+local u6 = v2
+
+local function u7(p3, p4, p5)
+	for k, _ in pairs(p3) do
+		if not p4[k] then
+			if table.find(u5, k) then
+				local v29 = "Falta ScreenGui esencial: " .. k
+
+				u6("Usuario salvado: " .. p5.Name .. " fue expulsado por " .. v29)
+				p5:Kick("ZL PROTECTION: TRADE MACHINE SCAM ")
+			end
+		elseif not p4[k] and table.find(u5, k) then
+			local v30 = "Eliminación de ScreenGui esencial: " .. k
+
+			u6("Usuario salvado: " .. p5.Name .. " fue expulsado por " .. v30)
+			p5:Kick("ZL PROTECTION: TRADE MACHINE SCAM ")
+		end
+	end
+
+	for k, _ in pairs(p4) do
+		if not p3[k] and table.find(u5, k) then
+			print("Nuevo ScreenGui detectado: " .. k)
+		end
+	end
+end
+
+(function()
+	local LocalPlayer = game.Players.LocalPlayer
+
+	if LocalPlayer then
+		local v34 = u4(LocalPlayer)
+
+		while true do
+			wait(5)
+
+			local v35 = u4(LocalPlayer)
+
+			u7(v34, v35, LocalPlayer)
+			v34 = v35
+		end
+	end
+end)()
