@@ -1,0 +1,915 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+local UIS = game:GetService("UserInputService")
+
+-- ----------------------------------------------------------------
+--  Colors & State
+-- ----------------------------------------------------------------
+local State = {
+    antiBatActive = false,
+    infJumpActive = false,
+    antiBatThread = nil,
+    infJumpThread = nil,
+    guiVisible = true
+}
+
+local C = {
+    bg = Color3.fromRGB(20, 40, 20),
+    card = Color3.fromRGB(18, 18, 22),
+    cardActive1 = Color3.fromRGB(25, 45, 35),
+    cardActive2 = Color3.fromRGB(45, 25, 35),
+    border = Color3.fromRGB(32, 32, 38),
+    text = Color3.fromRGB(255, 255, 255),
+    textSub = Color3.fromRGB(150, 150, 160),
+    accent1 = Color3.fromRGB(0, 255, 100),
+    accent2 = Color3.fromRGB(255, 45, 85),
+    pillOff = Color3.fromRGB(28, 28, 32),
+    dotOff = Color3.fromRGB(80, 80, 85),
+    watermark = Color3.fromRGB(120, 255, 120)   -- bright MachoHUB
+}
+
+-- ----------------------------------------------------------------
+--  Keybinds
+-- ----------------------------------------------------------------
+local antiBatBind = { type = "keyboard", value = Enum.KeyCode.O }
+local infJumpBind = { type = "keyboard", value = Enum.KeyCode.I }
+local guiToggleBind = { type = "keyboard", value = Enum.KeyCode.LeftControl }
+
+-- ----------------------------------------------------------------
+--  Config file (with retry & verification)
+-- ----------------------------------------------------------------
+local CONFIG_FILE = "MachoHUB_config.json"
+
+local shortToFullGamepad = {
+    A = "ButtonA", B = "ButtonB", X = "ButtonX", Y = "ButtonY",
+    LB = "ButtonL1", RB = "ButtonR1", LT = "ButtonL2", RT = "ButtonR2",
+    START = "ButtonStart", SELECT = "ButtonSelect",
+    L3 = "LeftThumbstick", R3 = "RightThumbstick",
+    ["DPAD UP"] = "DirectionalPadUp",
+    ["DPAD DOWN"] = "DirectionalPadDown",
+    ["DPAD LEFT"] = "DirectionalPadLeft",
+    ["DPAD RIGHT"] = "DirectionalPadRight"
+}
+
+local function getKeyName(keyCode)
+    local name = tostring(keyCode):gsub("Enum.KeyCode.", "")
+    if name == "LeftControl" then return "LCTRL"
+    elseif name == "RightControl" then return "RCTRL"
+    elseif name == "LeftShift" then return "LSHIFT"
+    elseif name == "RightShift" then return "RSHIFT"
+    elseif name == "LeftAlt" then return "LALT"
+    elseif name == "RightAlt" then return "RALT"
+    elseif name == "ButtonA" then return "A"
+    elseif name == "ButtonB" then return "B"
+    elseif name == "ButtonX" then return "X"
+    elseif name == "ButtonY" then return "Y"
+    elseif name == "ButtonL1" then return "LB"
+    elseif name == "ButtonR1" then return "RB"
+    elseif name == "ButtonL2" then return "LT"
+    elseif name == "ButtonR2" then return "RT"
+    elseif name == "ButtonStart" then return "START"
+    elseif name == "ButtonSelect" then return "SELECT"
+    elseif name == "LeftThumbstick" then return "L3"
+    elseif name == "RightThumbstick" then return "R3"
+    elseif name == "DirectionalPadUp" then return "DPAD UP"
+    elseif name == "DirectionalPadDown" then return "DPAD DOWN"
+    elseif name == "DirectionalPadLeft" then return "DPAD LEFT"
+    elseif name == "DirectionalPadRight" then return "DPAD RIGHT"
+    end
+    if #name > 6 then name = name:sub(1,6) end
+    return name:upper()
+end
+
+local function saveConfig()
+    local data = {
+        antiBatType = antiBatBind.type,
+        antiBatValue = tostring(antiBatBind.value):gsub("Enum.KeyCode.", ""),
+        infJumpType = infJumpBind.type,
+        infJumpValue = tostring(infJumpBind.value):gsub("Enum.KeyCode.", ""),
+        guiToggleType = guiToggleBind.type,
+        guiToggleValue = tostring(guiToggleBind.value):gsub("Enum.KeyCode.", "")
+    }
+    for attempt = 1, 3 do
+        local ok = pcall(function()
+            if writefile then
+                writefile(CONFIG_FILE, HttpService:JSONEncode(data))
+                task.wait(0.1)
+                local verify = readfile(CONFIG_FILE)
+                if verify and verify ~= "" then
+                    return true
+                end
+            end
+            return false
+        end)
+        if ok then break end
+        task.wait(0.2)
+    end
+end
+
+local function loadConfig()
+    local raw, err = pcall(function() return readfile and readfile(CONFIG_FILE) end)
+    if not raw or not err or err == "" then return end
+    local ok, cfg = pcall(HttpService.JSONDecode, HttpService, err)
+    if not ok or not cfg then
+        pcall(function() if deletefile then deletefile(CONFIG_FILE) end end)
+        return
+    end
+
+    local function getEnum(valueStr, typ)
+        if typ == "controller" then
+            local full = Enum.KeyCode[valueStr]
+            if full and full ~= Enum.KeyCode.Unknown then
+                return full
+            end
+            local mapped = shortToFullGamepad[valueStr]
+            if mapped then
+                return Enum.KeyCode[mapped]
+            end
+        else
+            return Enum.KeyCode[valueStr]
+        end
+        return nil
+    end
+
+    local ab = getEnum(cfg.antiBatValue, cfg.antiBatType)
+    if ab then
+        antiBatBind.type = cfg.antiBatType
+        antiBatBind.value = ab
+    end
+    local ij = getEnum(cfg.infJumpValue, cfg.infJumpType)
+    if ij then
+        infJumpBind.type = cfg.infJumpType
+        infJumpBind.value = ij
+    end
+    local gt = getEnum(cfg.guiToggleValue, cfg.guiToggleType)
+    if gt then
+        guiToggleBind.type = cfg.guiToggleType
+        guiToggleBind.value = gt
+    end
+end
+pcall(loadConfig)
+
+-- ----------------------------------------------------------------
+--  Anti Bat (independent)
+-- ----------------------------------------------------------------
+local antiBatStatus, antiBatSwitchBall, antiBatRow, antiBatRowStroke
+local antiBatKeyBtn, antiBatKeyBtnStroke
+
+local function toggleAntiBat()
+    State.antiBatActive = not State.antiBatActive
+    if antiBatStatus then
+        antiBatStatus.Text = State.antiBatActive and "STATUS: ACTIVE" or "STATUS: DISABLED"
+        antiBatStatus.TextColor3 = State.antiBatActive and C.accent1 or C.textSub
+    end
+    if antiBatRow and antiBatRowStroke then
+        TweenService:Create(antiBatRow, TweenInfo.new(0.2), {
+            BackgroundColor3 = State.antiBatActive and C.cardActive1 or C.card
+        }):Play()
+        TweenService:Create(antiBatRowStroke, TweenInfo.new(0.2), {
+            Color = State.antiBatActive and C.accent1 or C.border
+        }):Play()
+    end
+    if antiBatSwitchBall then
+        TweenService:Create(antiBatSwitchBall, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = State.antiBatActive and UDim2.new(1, -15, 0.5, -5) or UDim2.new(0, 5, 0.5, -5),
+            BackgroundColor3 = State.antiBatActive and C.text or C.dotOff,
+        }):Play()
+    end
+    if State.antiBatActive then
+        if State.antiBatThread then State.antiBatThread:Disconnect() end
+        State.antiBatThread = RunService.Heartbeat:Connect(function()
+            local char = LocalPlayer.Character
+            if not char then return end
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hum or not hrp then return end
+            if hum.MoveDirection.Magnitude <= 0 then return end
+            local vel = hrp.Velocity
+            hrp.Velocity = Vector3.new(vel.X * 50, 50, vel.Z * 50)
+            RunService.RenderStepped:Wait()
+            hrp.Velocity = vel + Vector3.new(0, 0.05, 0)
+        end)
+    else
+        if State.antiBatThread then
+            State.antiBatThread:Disconnect()
+            State.antiBatThread = nil
+        end
+    end
+end
+
+-- ----------------------------------------------------------------
+--  Infinite Jump (independent)
+-- ----------------------------------------------------------------
+local infJumpStatus, infJumpSwitchBall, infJumpRow, infJumpRowStroke
+local infJumpKeyBtn, infJumpKeyBtnStroke
+
+local jumpHeld = false
+local lastJumpBoostTime = 0
+local JUMP_BOOST_INTERVAL = 0.05
+
+-- Mobile jump button hook
+task.spawn(function()
+    local pg = LocalPlayer:WaitForChild("PlayerGui", 10)
+    if pg then
+        local function hookJumpButton(btn)
+            if btn:IsA("GuiButton") and btn.Name == "JumpButton" and not btn:GetAttribute("InfJumpHooked") then
+                btn:SetAttribute("InfJumpHooked", true)
+                btn.MouseButton1Down:Connect(function()
+                    if State.infJumpActive then jumpHeld = true end
+                end)
+                btn.MouseButton1Up:Connect(function() jumpHeld = false end)
+                btn.MouseLeave:Connect(function() jumpHeld = false end)
+            end
+        end
+        for _, d in ipairs(pg:GetDescendants()) do hookJumpButton(d) end
+        pg.DescendantAdded:Connect(hookJumpButton)
+    end
+end)
+
+UserInputService.JumpRequest:Connect(function()
+    if State.infJumpActive then
+        jumpHeld = true
+        task.wait(0.05)
+        jumpHeld = false
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(inp, gpe)
+    if gpe then return end
+    if State.infJumpActive and inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == Enum.KeyCode.Space then
+        jumpHeld = true
+    end
+end)
+UserInputService.InputEnded:Connect(function(inp, gpe)
+    if inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == Enum.KeyCode.Space then
+        jumpHeld = false
+    end
+end)
+
+local function startInfJumpLoop()
+    if State.infJumpThread then State.infJumpThread:Disconnect() end
+    State.infJumpThread = RunService.Stepped:Connect(function()
+        if not State.infJumpActive then return end
+        if not jumpHeld then return end
+        local now = tick()
+        if now - lastJumpBoostTime < JUMP_BOOST_INTERVAL then return end
+        lastJumpBoostTime = now
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hum or not hrp or hum.Health <= 0 then return end
+        local vel = hrp.AssemblyLinearVelocity
+        if vel.Y < 55 then
+            hrp.AssemblyLinearVelocity = Vector3.new(vel.X, 65, vel.Z)
+        end
+    end)
+end
+
+local function stopInfJumpLoop()
+    if State.infJumpThread then
+        State.infJumpThread:Disconnect()
+        State.infJumpThread = nil
+    end
+    jumpHeld = false
+    lastJumpBoostTime = 0
+end
+
+local function toggleInfJump()
+    State.infJumpActive = not State.infJumpActive
+    if infJumpStatus then
+        infJumpStatus.Text = State.infJumpActive and "STATUS: ACTIVE" or "STATUS: DISABLED"
+        infJumpStatus.TextColor3 = State.infJumpActive and C.accent2 or C.textSub
+    end
+    if infJumpRow and infJumpRowStroke then
+        TweenService:Create(infJumpRow, TweenInfo.new(0.2), {
+            BackgroundColor3 = State.infJumpActive and C.cardActive2 or C.card
+        }):Play()
+        TweenService:Create(infJumpRowStroke, TweenInfo.new(0.2), {
+            Color = State.infJumpActive and C.accent2 or C.border
+        }):Play()
+    end
+    if infJumpSwitchBall then
+        TweenService:Create(infJumpSwitchBall, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Position = State.infJumpActive and UDim2.new(1, -15, 0.5, -5) or UDim2.new(0, 5, 0.5, -5),
+            BackgroundColor3 = State.infJumpActive and C.text or C.dotOff,
+        }):Play()
+    end
+    if State.infJumpActive then
+        startInfJumpLoop()
+    else
+        stopInfJumpLoop()
+    end
+end
+
+-- ----------------------------------------------------------------
+--  GUI Creation (transparent background + bold watermark)
+-- ----------------------------------------------------------------
+local gui = Instance.new("ScreenGui")
+gui.Name = "MachoHUB"
+gui.ResetOnSpawn = false
+pcall(function()
+    gui.Parent = game:GetService("CoreGui")
+    if syn and syn.protect_gui then syn.protect_gui(gui) end
+end)
+if not gui.Parent then gui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+local mainOuter = Instance.new("Frame", gui)
+mainOuter.Size = UDim2.new(0, 180, 0, 300)
+mainOuter.Position = UDim2.new(0.05, 0, 0.3, 0)
+mainOuter.BackgroundColor3 = C.bg
+mainOuter.BackgroundTransparency = 0.65   -- <--- TRANSPARENT BACKGROUND
+mainOuter.BorderSizePixel = 0
+mainOuter.ClipsDescendants = true
+
+local function corner(p, r)
+    local c = Instance.new("UICorner", p)
+    c.CornerRadius = UDim.new(0, r or 8)
+end
+corner(mainOuter, 10)
+
+local stroke = Instance.new("UIStroke", mainOuter)
+stroke.Thickness = 1.5
+local grad = Instance.new("UIGradient", stroke)
+grad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, C.accent1),
+    ColorSequenceKeypoint.new(0.5, C.accent2),
+    ColorSequenceKeypoint.new(1, C.accent1)
+})
+grad.Rotation = 45
+stroke.Transparency = 0.3   -- make border slightly see-through too
+
+-- ========== BACKGROUND WATERMARK (bold & visible) ==========
+local watermarkContainer = Instance.new("Frame", mainOuter)
+watermarkContainer.Size = UDim2.new(1, 0, 1, 0)
+watermarkContainer.BackgroundTransparency = 1
+watermarkContainer.ZIndex = 0
+
+-- Large diagonal text
+local watermark = Instance.new("TextLabel", watermarkContainer)
+watermark.Size = UDim2.new(1.6, 0, 0.6, 0)
+watermark.Position = UDim2.new(-0.3, 0, 0.2, 0)
+watermark.BackgroundTransparency = 1
+watermark.Text = "MachoHUB DUELS"
+watermark.TextColor3 = C.watermark
+watermark.TextTransparency = 0.3   -- much less transparent
+watermark.Font = Enum.Font.GothamBlack
+watermark.TextSize = 30
+watermark.TextWrapped = false
+watermark.TextScaled = false
+watermark.TextXAlignment = Enum.TextXAlignment.Center
+watermark.TextYAlignment = Enum.TextYAlignment.Center
+watermark.ZIndex = 0
+watermark.Rotation = -15
+
+-- Drop shadow for readability
+local watermarkShadow = Instance.new("TextLabel", watermarkContainer)
+watermarkShadow.Size = watermark.Size
+watermarkShadow.Position = UDim2.new(-0.3, 1, 0.2, 1)
+watermarkShadow.BackgroundTransparency = 1
+watermarkShadow.Text = "MachoHUB DUELS"
+watermarkShadow.TextColor3 = Color3.fromRGB(0, 0, 0)
+watermarkShadow.TextTransparency = 0.4
+watermarkShadow.Font = watermark.Font
+watermarkShadow.TextSize = watermark.TextSize
+watermarkShadow.TextXAlignment = watermark.TextXAlignment
+watermarkShadow.TextYAlignment = watermark.TextYAlignment
+watermarkShadow.ZIndex = 0
+watermarkShadow.Rotation = watermark.Rotation
+
+-- Small bottom watermark
+local watermark2 = Instance.new("TextLabel", watermarkContainer)
+watermark2.Size = UDim2.new(0.9, 0, 0.15, 0)
+watermark2.Position = UDim2.new(0.05, 0, 0.82, 0)
+watermark2.BackgroundTransparency = 1
+watermark2.Text = "⚔️ MachoHUB DUELS ⚔️"
+watermark2.TextColor3 = C.watermark
+watermark2.TextTransparency = 0.35
+watermark2.Font = Enum.Font.GothamBold
+watermark2.TextSize = 11
+watermark2.TextXAlignment = Enum.TextXAlignment.Center
+watermark2.ZIndex = 0
+
+-- Dragging
+local drag = {}
+mainOuter.InputBegan:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+        drag.active = true
+        drag.start = inp.Position
+        drag.startPos = mainOuter.Position
+        inp.Changed:Connect(function()
+            if inp.UserInputState == Enum.UserInputState.End then drag.active = false end
+        end)
+    end
+end)
+mainOuter.InputChanged:Connect(function(inp)
+    if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+        drag.input = inp
+    end
+end)
+UIS.InputChanged:Connect(function(inp)
+    if inp == drag.input and drag.active then
+        local delta = inp.Position - drag.start
+        mainOuter.Position = UDim2.new(drag.startPos.X.Scale, drag.startPos.X.Offset + delta.X, drag.startPos.Y.Scale, drag.startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Title
+local title = Instance.new("TextLabel", mainOuter)
+title.Size = UDim2.new(1, -16, 0, 26)
+title.Position = UDim2.new(0, 8, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "MachoHUB"
+title.TextColor3 = C.text
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 10
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.ZIndex = 2
+
+local glow = Instance.new("Frame", mainOuter)
+glow.Size = UDim2.new(0, 4, 0, 4)
+glow.Position = UDim2.new(1, -12, 0, 11)
+glow.BackgroundColor3 = C.accent1
+glow.BorderSizePixel = 0
+corner(glow, 2)
+glow.ZIndex = 2
+
+-- ========== Anti Bat Row ==========
+antiBatRow = Instance.new("Frame", mainOuter)
+antiBatRow.Size = UDim2.new(1, -16, 0, 62)
+antiBatRow.Position = UDim2.new(0, 8, 0, 30)
+antiBatRow.BackgroundColor3 = C.card
+antiBatRow.BackgroundTransparency = 0.15   -- slightly see-through but solid enough
+corner(antiBatRow, 6)
+antiBatRowStroke = Instance.new("UIStroke", antiBatRow)
+antiBatRowStroke.Color = C.border
+antiBatRow.ZIndex = 2
+
+local abRowBtn = Instance.new("TextButton", antiBatRow)
+abRowBtn.Size = UDim2.new(1, 0, 1, 0)
+abRowBtn.BackgroundTransparency = 1
+abRowBtn.Text = ""
+abRowBtn.ZIndex = 2
+abRowBtn.MouseButton1Click:Connect(toggleAntiBat)
+
+local abLabel = Instance.new("TextLabel", antiBatRow)
+abLabel.Size = UDim2.new(1, -70, 0, 14)
+abLabel.Position = UDim2.new(0, 8, 0, 5)
+abLabel.BackgroundTransparency = 1
+abLabel.Text = "Anti Bat"
+abLabel.TextColor3 = C.text
+abLabel.Font = Enum.Font.GothamBold
+abLabel.TextSize = 10
+abLabel.TextXAlignment = Enum.TextXAlignment.Left
+abLabel.ZIndex = 2
+
+antiBatStatus = Instance.new("TextLabel", antiBatRow)
+antiBatStatus.Size = UDim2.new(1, -70, 0, 11)
+antiBatStatus.Position = UDim2.new(0, 8, 0, 20)
+antiBatStatus.BackgroundTransparency = 1
+antiBatStatus.Text = "STATUS: DISABLED"
+antiBatStatus.TextColor3 = C.textSub
+antiBatStatus.Font = Enum.Font.GothamSemibold
+antiBatStatus.TextSize = 8
+antiBatStatus.TextXAlignment = Enum.TextXAlignment.Left
+antiBatStatus.ZIndex = 2
+
+local pill = Instance.new("Frame", antiBatRow)
+pill.Size = UDim2.new(0, 32, 0, 18)
+pill.Position = UDim2.new(1, -38, 0.5, -9)
+pill.BackgroundColor3 = C.pillOff
+corner(pill, 9)
+local pillStroke = Instance.new("UIStroke", pill)
+pillStroke.Color = C.border
+pill.ZIndex = 2
+
+antiBatSwitchBall = Instance.new("Frame", pill)
+antiBatSwitchBall.Size = UDim2.new(0, 9, 0, 9)
+antiBatSwitchBall.Position = UDim2.new(0, 4, 0.5, -4.5)
+antiBatSwitchBall.BackgroundColor3 = C.dotOff
+corner(antiBatSwitchBall, 4.5)
+antiBatSwitchBall.ZIndex = 2
+
+local keyChip = Instance.new("Frame", antiBatRow)
+keyChip.Size = UDim2.new(1, -16, 0, 16)
+keyChip.Position = UDim2.new(0, 8, 0, 40)
+keyChip.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+keyChip.BackgroundTransparency = 0.2
+keyChip.BorderSizePixel = 0
+keyChip.ZIndex = 2
+corner(keyChip, 3)
+local chipStroke = Instance.new("UIStroke", keyChip)
+chipStroke.Color = C.border
+
+local keyLabel = Instance.new("TextLabel", keyChip)
+keyLabel.Size = UDim2.new(0, 28, 1, 0)
+keyLabel.Position = UDim2.new(0, 4, 0, 0)
+keyLabel.BackgroundTransparency = 1
+keyLabel.Text = "KEY:"
+keyLabel.TextColor3 = C.textSub
+keyLabel.Font = Enum.Font.GothamSemibold
+keyLabel.TextSize = 7
+keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+keyLabel.ZIndex = 2
+
+antiBatKeyBtn = Instance.new("TextButton", keyChip)
+antiBatKeyBtn.Size = UDim2.new(0, 40, 1, -2)
+antiBatKeyBtn.Position = UDim2.new(0, 32, 0, 1)
+antiBatKeyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+antiBatKeyBtn.BorderSizePixel = 0
+antiBatKeyBtn.Text = getKeyName(antiBatBind.value)
+antiBatKeyBtn.TextColor3 = C.accent1
+antiBatKeyBtn.Font = Enum.Font.GothamBold
+antiBatKeyBtn.TextSize = 7
+antiBatKeyBtn.ZIndex = 3
+corner(antiBatKeyBtn, 2)
+antiBatKeyBtnStroke = Instance.new("UIStroke", antiBatKeyBtn)
+antiBatKeyBtnStroke.Color = C.accent1
+
+-- ========== Inf Jump Row ==========
+infJumpRow = Instance.new("Frame", mainOuter)
+infJumpRow.Size = UDim2.new(1, -16, 0, 62)
+infJumpRow.Position = UDim2.new(0, 8, 0, 98)
+infJumpRow.BackgroundColor3 = C.card
+infJumpRow.BackgroundTransparency = 0.15
+corner(infJumpRow, 6)
+infJumpRowStroke = Instance.new("UIStroke", infJumpRow)
+infJumpRowStroke.Color = C.border
+infJumpRow.ZIndex = 2
+
+local ijRowBtn = Instance.new("TextButton", infJumpRow)
+ijRowBtn.Size = UDim2.new(1, 0, 1, 0)
+ijRowBtn.BackgroundTransparency = 1
+ijRowBtn.Text = ""
+ijRowBtn.ZIndex = 2
+ijRowBtn.MouseButton1Click:Connect(toggleInfJump)
+
+local ijLabel = Instance.new("TextLabel", infJumpRow)
+ijLabel.Size = UDim2.new(1, -70, 0, 14)
+ijLabel.Position = UDim2.new(0, 8, 0, 5)
+ijLabel.BackgroundTransparency = 1
+ijLabel.Text = "Inf Jump"
+ijLabel.TextColor3 = C.text
+ijLabel.Font = Enum.Font.GothamBold
+ijLabel.TextSize = 10
+ijLabel.TextXAlignment = Enum.TextXAlignment.Left
+ijLabel.ZIndex = 2
+
+infJumpStatus = Instance.new("TextLabel", infJumpRow)
+infJumpStatus.Size = UDim2.new(1, -70, 0, 11)
+infJumpStatus.Position = UDim2.new(0, 8, 0, 20)
+infJumpStatus.BackgroundTransparency = 1
+infJumpStatus.Text = "STATUS: DISABLED"
+infJumpStatus.TextColor3 = C.textSub
+infJumpStatus.Font = Enum.Font.GothamSemibold
+infJumpStatus.TextSize = 8
+infJumpStatus.TextXAlignment = Enum.TextXAlignment.Left
+infJumpStatus.ZIndex = 2
+
+local pill2 = Instance.new("Frame", infJumpRow)
+pill2.Size = UDim2.new(0, 32, 0, 18)
+pill2.Position = UDim2.new(1, -38, 0.5, -9)
+pill2.BackgroundColor3 = C.pillOff
+corner(pill2, 9)
+local pillStroke2 = Instance.new("UIStroke", pill2)
+pillStroke2.Color = C.border
+pill2.ZIndex = 2
+
+infJumpSwitchBall = Instance.new("Frame", pill2)
+infJumpSwitchBall.Size = UDim2.new(0, 9, 0, 9)
+infJumpSwitchBall.Position = UDim2.new(0, 4, 0.5, -4.5)
+infJumpSwitchBall.BackgroundColor3 = C.dotOff
+corner(infJumpSwitchBall, 4.5)
+infJumpSwitchBall.ZIndex = 2
+
+local keyChip2 = Instance.new("Frame", infJumpRow)
+keyChip2.Size = UDim2.new(1, -16, 0, 16)
+keyChip2.Position = UDim2.new(0, 8, 0, 40)
+keyChip2.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+keyChip2.BackgroundTransparency = 0.2
+keyChip2.BorderSizePixel = 0
+keyChip2.ZIndex = 2
+corner(keyChip2, 3)
+local chipStroke2 = Instance.new("UIStroke", keyChip2)
+chipStroke2.Color = C.border
+
+local keyLabel2 = Instance.new("TextLabel", keyChip2)
+keyLabel2.Size = UDim2.new(0, 28, 1, 0)
+keyLabel2.Position = UDim2.new(0, 4, 0, 0)
+keyLabel2.BackgroundTransparency = 1
+keyLabel2.Text = "KEY:"
+keyLabel2.TextColor3 = C.textSub
+keyLabel2.Font = Enum.Font.GothamSemibold
+keyLabel2.TextSize = 7
+keyLabel2.TextXAlignment = Enum.TextXAlignment.Left
+keyLabel2.ZIndex = 2
+
+infJumpKeyBtn = Instance.new("TextButton", keyChip2)
+infJumpKeyBtn.Size = UDim2.new(0, 40, 1, -2)
+infJumpKeyBtn.Position = UDim2.new(0, 32, 0, 1)
+infJumpKeyBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+infJumpKeyBtn.BorderSizePixel = 0
+infJumpKeyBtn.Text = getKeyName(infJumpBind.value)
+infJumpKeyBtn.TextColor3 = C.accent2
+infJumpKeyBtn.Font = Enum.Font.GothamBold
+infJumpKeyBtn.TextSize = 7
+infJumpKeyBtn.ZIndex = 3
+corner(infJumpKeyBtn, 2)
+infJumpKeyBtnStroke = Instance.new("UIStroke", infJumpKeyBtn)
+infJumpKeyBtnStroke.Color = C.accent2
+
+-- ========== GUI Toggle Row ==========
+local toggleRow = Instance.new("Frame", mainOuter)
+toggleRow.Size = UDim2.new(1, -16, 0, 44)
+toggleRow.Position = UDim2.new(0, 8, 0, 166)
+toggleRow.BackgroundColor3 = C.card
+toggleRow.BackgroundTransparency = 0.15
+corner(toggleRow, 6)
+local toggleRowStroke = Instance.new("UIStroke", toggleRow)
+toggleRowStroke.Color = C.border
+toggleRow.ZIndex = 2
+
+local toggleLabel = Instance.new("TextLabel", toggleRow)
+toggleLabel.Size = UDim2.new(1, -80, 0, 14)
+toggleLabel.Position = UDim2.new(0, 8, 0, 5)
+toggleLabel.BackgroundTransparency = 1
+toggleLabel.Text = "GUI Toggle"
+toggleLabel.TextColor3 = C.text
+toggleLabel.Font = Enum.Font.GothamBold
+toggleLabel.TextSize = 10
+toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
+toggleLabel.ZIndex = 2
+
+local toggleSub = Instance.new("TextLabel", toggleRow)
+toggleSub.Size = UDim2.new(1, -80, 0, 11)
+toggleSub.Position = UDim2.new(0, 8, 0, 19)
+toggleSub.BackgroundTransparency = 1
+toggleSub.Text = "Click to rebind"
+toggleSub.TextColor3 = C.textSub
+toggleSub.Font = Enum.Font.GothamSemibold
+toggleSub.TextSize = 7
+toggleSub.TextXAlignment = Enum.TextXAlignment.Left
+toggleSub.ZIndex = 2
+
+local toggleKeyBtn = Instance.new("TextButton", toggleRow)
+toggleKeyBtn.Size = UDim2.new(0, 54, 0, 18)
+toggleKeyBtn.Position = UDim2.new(1, -62, 0.5, -9)
+toggleKeyBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+toggleKeyBtn.BorderSizePixel = 0
+toggleKeyBtn.Text = getKeyName(guiToggleBind.value)
+toggleKeyBtn.TextColor3 = C.accent1
+toggleKeyBtn.Font = Enum.Font.GothamBold
+toggleKeyBtn.TextSize = 7
+toggleKeyBtn.ZIndex = 2
+corner(toggleKeyBtn, 3)
+local toggleKeyBtnStroke = Instance.new("UIStroke", toggleKeyBtn)
+toggleKeyBtnStroke.Color = C.accent1
+
+-- ========== Save Config Button Row ==========
+local saveRow = Instance.new("Frame", mainOuter)
+saveRow.Size = UDim2.new(1, -16, 0, 38)
+saveRow.Position = UDim2.new(0, 8, 0, 216)
+saveRow.BackgroundColor3 = C.card
+saveRow.BackgroundTransparency = 0.15
+corner(saveRow, 6)
+local saveRowStroke = Instance.new("UIStroke", saveRow)
+saveRowStroke.Color = C.border
+saveRow.ZIndex = 2
+
+local saveBtn = Instance.new("TextButton", saveRow)
+saveBtn.Size = UDim2.new(1, -16, 0, 24)
+saveBtn.Position = UDim2.new(0, 8, 0.5, -12)
+saveBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+saveBtn.BorderSizePixel = 0
+saveBtn.Text = "💾 Save"
+saveBtn.TextColor3 = C.accent1
+saveBtn.Font = Enum.Font.GothamBold
+saveBtn.TextSize = 9
+corner(saveBtn, 4)
+local saveBtnStroke = Instance.new("UIStroke", saveBtn)
+saveBtnStroke.Color = C.accent1
+saveBtn.ZIndex = 2
+
+local function flashSaveButton(success)
+    local originalText = saveBtn.Text
+    if success then
+        saveBtn.Text = "✓ Saved!"
+        saveBtn.TextColor3 = C.accent1
+        saveBtn.BackgroundColor3 = Color3.fromRGB(20, 50, 20)
+        saveBtnStroke.Color = C.accent1
+    else
+        saveBtn.Text = "✗ Failed!"
+        saveBtn.TextColor3 = C.accent2
+        saveBtn.BackgroundColor3 = Color3.fromRGB(60, 25, 25)
+        saveBtnStroke.Color = C.accent2
+    end
+    task.delay(1.5, function()
+        if saveBtn and saveBtn.Parent then
+            saveBtn.Text = originalText
+            saveBtn.TextColor3 = C.accent1
+            saveBtn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+            saveBtnStroke.Color = C.accent1
+        end
+    end)
+end
+
+saveBtn.MouseButton1Click:Connect(function()
+    local ok = pcall(saveConfig)
+    flashSaveButton(ok)
+end)
+
+saveBtn.MouseEnter:Connect(function()
+    TweenService:Create(saveBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(38, 38, 46)}):Play()
+end)
+saveBtn.MouseLeave:Connect(function()
+    TweenService:Create(saveBtn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(28, 28, 36)}):Play()
+end)
+
+-- ----------------------------------------------------------------
+--  Rebinding Logic
+-- ----------------------------------------------------------------
+local listeningAB = false
+local listeningIJ = false
+local listeningGT = false
+
+local function updateAllButtons()
+    antiBatKeyBtn.Text = getKeyName(antiBatBind.value)
+    infJumpKeyBtn.Text = getKeyName(infJumpBind.value)
+    toggleKeyBtn.Text = getKeyName(guiToggleBind.value)
+end
+
+-- Anti Bat rebind
+antiBatKeyBtn.MouseButton1Click:Connect(function()
+    if listeningAB then return end
+    listeningAB = true
+    antiBatKeyBtn.Text = "..."
+    antiBatKeyBtn.TextColor3 = C.accent2
+    antiBatKeyBtnStroke.Color = C.accent2
+    local conn
+    conn = UIS.InputBegan:Connect(function(inp, gpe)
+        if inp.UserInputType == Enum.UserInputType.Keyboard then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            antiBatBind = { type = "keyboard", value = inp.KeyCode }
+            updateAllButtons()
+            antiBatKeyBtn.TextColor3 = C.accent1
+            antiBatKeyBtnStroke.Color = C.accent1
+            listeningAB = false
+            saveConfig()
+        elseif inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2 then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            antiBatBind = { type = "controller", value = inp.KeyCode }
+            updateAllButtons()
+            antiBatKeyBtn.TextColor3 = C.accent1
+            antiBatKeyBtnStroke.Color = C.accent1
+            listeningAB = false
+            saveConfig()
+        end
+    end)
+end)
+
+-- Inf Jump rebind
+infJumpKeyBtn.MouseButton1Click:Connect(function()
+    if listeningIJ then return end
+    listeningIJ = true
+    infJumpKeyBtn.Text = "..."
+    infJumpKeyBtn.TextColor3 = C.accent2
+    infJumpKeyBtnStroke.Color = C.accent2
+    local conn
+    conn = UIS.InputBegan:Connect(function(inp, gpe)
+        if inp.UserInputType == Enum.UserInputType.Keyboard then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            infJumpBind = { type = "keyboard", value = inp.KeyCode }
+            updateAllButtons()
+            infJumpKeyBtn.TextColor3 = C.accent2
+            infJumpKeyBtnStroke.Color = C.accent2
+            listeningIJ = false
+            saveConfig()
+        elseif inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2 then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            infJumpBind = { type = "controller", value = inp.KeyCode }
+            updateAllButtons()
+            infJumpKeyBtn.TextColor3 = C.accent2
+            infJumpKeyBtnStroke.Color = C.accent2
+            listeningIJ = false
+            saveConfig()
+        end
+    end)
+end)
+
+-- GUI Toggle rebind
+toggleKeyBtn.MouseButton1Click:Connect(function()
+    if listeningGT then return end
+    listeningGT = true
+    toggleKeyBtn.Text = "..."
+    toggleKeyBtn.TextColor3 = C.accent2
+    toggleKeyBtnStroke.Color = C.accent2
+    toggleSub.Text = "Press any..."
+    local conn
+    conn = UIS.InputBegan:Connect(function(inp, gpe)
+        if inp.UserInputType == Enum.UserInputType.Keyboard then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            guiToggleBind = { type = "keyboard", value = inp.KeyCode }
+            updateAllButtons()
+            toggleKeyBtn.TextColor3 = C.accent1
+            toggleKeyBtnStroke.Color = C.accent1
+            toggleSub.Text = "Click to rebind"
+            listeningGT = false
+            saveConfig()
+        elseif inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2 then
+            if inp.KeyCode == Enum.KeyCode.Unknown then return end
+            conn:Disconnect()
+            guiToggleBind = { type = "controller", value = inp.KeyCode }
+            updateAllButtons()
+            toggleKeyBtn.TextColor3 = C.accent1
+            toggleKeyBtnStroke.Color = C.accent1
+            toggleSub.Text = "Click to rebind"
+            listeningGT = false
+            saveConfig()
+        end
+    end)
+end)
+
+-- ----------------------------------------------------------------
+--  Main Input Handler
+-- ----------------------------------------------------------------
+UIS.InputBegan:Connect(function(inp, gpe)
+    if gpe then return end
+    if listeningAB or listeningIJ or listeningGT then return end
+
+    if antiBatBind.type == "keyboard" and inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == antiBatBind.value then
+        toggleAntiBat()
+    elseif antiBatBind.type == "controller" and (inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2) and inp.KeyCode == antiBatBind.value then
+        toggleAntiBat()
+    end
+
+    if infJumpBind.type == "keyboard" and inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == infJumpBind.value then
+        toggleInfJump()
+    elseif infJumpBind.type == "controller" and (inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2) and inp.KeyCode == infJumpBind.value then
+        toggleInfJump()
+    end
+
+    if guiToggleBind.type == "keyboard" and inp.UserInputType == Enum.UserInputType.Keyboard and inp.KeyCode == guiToggleBind.value then
+        State.guiVisible = not State.guiVisible
+        mainOuter.Visible = State.guiVisible
+    elseif guiToggleBind.type == "controller" and (inp.UserInputType == Enum.UserInputType.Gamepad1 or inp.UserInputType == Enum.UserInputType.Gamepad2) and inp.KeyCode == guiToggleBind.value then
+        State.guiVisible = not State.guiVisible
+        mainOuter.Visible = State.guiVisible
+    end
+end)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local lp = Players.LocalPlayer
+
+local sg = Instance.new("ScreenGui")
+sg.Name = "IrishWatermark"
+sg.ResetOnSpawn = false
+sg.IgnoreGuiInset = true
+sg.Parent = lp:WaitForChild("PlayerGui")
+
+local lbl = Instance.new("TextLabel")
+lbl.Text = "discord.gg/irish"
+lbl.Size = UDim2.new(0, 360, 0, 50)
+lbl.AnchorPoint = Vector2.new(0.5, 1)
+lbl.BackgroundTransparency = 1
+lbl.Font = Enum.Font.GothamBlack
+lbl.TextSize = 28
+lbl.TextStrokeTransparency = 0.3
+lbl.TextStrokeColor3 = Color3.new(0, 0, 0)
+lbl.ZIndex = 100
+lbl.Parent = sg
+
+local hue = 0
+
+task.spawn(function()
+    while task.wait() do
+        local char = lp.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local cam = workspace.CurrentCamera
+
+        if hrp and cam then
+            local screenPos, onScreen = cam:WorldToViewportPoint(hrp.Position + Vector3.new(0, 4.5, 0))
+            lbl.Visible = onScreen
+            if onScreen then
+                lbl.Position = UDim2.new(0, screenPos.X, 0, screenPos.Y - 8)
+            end
+        else
+            lbl.Visible = false
+        end
+
+        hue = (hue + 0.012) % 1
+        lbl.TextColor3 = Color3.fromHSV(hue, 1, 1)
+        lbl.TextStrokeColor3 = Color3.fromHSV(hue, 1, 0.2)
+    end
+end)
+
+print("MachoHUB ON TOP LOADED")
